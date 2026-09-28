@@ -366,44 +366,9 @@
   @media(max-width:760px){body{padding:0 16px 30px;} .overview{gap:8px; grid-template-columns:repeat(3,1fr);} .overview-item{padding:14px;gap:9px;} .overview-icon{display:none;} .workspace-heading{align-items:flex-start;} .view-toolbar{gap:12px;} .vt-group-right{margin-left:0;} .search-card{flex-wrap:wrap;gap:12px;} .search-field,.global-stats{flex-basis:100%;} .group-sort .vt-label{display:none;}}
   @media(max-width:440px){.overview{grid-template-columns:repeat(2,1fr);} h1{font-size:25px;} .workspace-heading{flex-wrap:wrap;} .overview-value{font-size:23px;} .overview-label{font-size:10px;} .swatches{gap:7px;} .add-cat-row{gap:14px;} .vt-group{flex-wrap:wrap;}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
-
-  /* auth gate */
-  .auth-gate{
-    position:fixed; inset:0; background:var(--bg); z-index:2000;
-    display:flex; align-items:center; justify-content:center; padding:16px;
-  }
-  .auth-gate[hidden]{display:none;}
-  .auth-gate-box{
-    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
-    padding:28px 24px; width:min(360px,90vw); display:flex; flex-direction:column; gap:12px;
-    box-shadow:0 10px 40px rgba(0,0,0,.15);
-  }
-  .auth-gate-box h2{font-size:1.2rem; margin:0 0 4px; text-align:center;}
-  .auth-gate-box input{
-    font:inherit; padding:10px 12px; border-radius:8px; border:1px solid var(--border);
-    background:var(--bg); color:var(--text); font-size:.9rem;
-  }
-  .auth-gate-box input:focus{outline:2px solid var(--accent); outline-offset:1px;}
-  .auth-gate-box button{width:100%; margin-top:4px;}
-  .auth-link{
-    background:transparent; color:var(--accent); border:none; font-size:.82rem;
-    font-weight:500; padding:6px; text-decoration:underline; cursor:pointer; text-align:center; display:block;
-  }
-  .auth-err{color:var(--danger); font-size:.8rem; min-height:1em; text-align:center;}
 </style>
 </head>
 <body>
-
-<div id="authGate" class="auth-gate" hidden>
-  <div class="auth-gate-box">
-    <h2>Iniciar sesión</h2>
-    <input type="email" id="gateEmail" placeholder="Correo electrónico" autocomplete="email">
-    <input type="password" id="gatePassword" placeholder="Contraseña" autocomplete="current-password">
-    <div class="auth-err" id="gateErr"></div>
-    <button id="gateLoginBtn">Entrar</button>
-    <a href="index.html" class="auth-link">← Ir a la página principal</a>
-  </div>
-</div>
 
 <div class="wrap">
   <div id="fileBanner"></div>
@@ -423,7 +388,6 @@
   <div class="view-toolbar">
     <span id="headerDate" class="header-date"></span>
     <a href="index.html" class="vt-btn vt-btn-outline">← Volver a proyectos</a>
-    <button id="logoutBtn" class="vt-btn vt-btn-outline">↩ Cerrar sesión</button>
     <a href="#guide" class="vt-btn vt-btn-highlight">Guía rápida</a>
     <button id="themeToggleBtn" class="vt-btn vt-btn-outline"></button>
     <div class="vt-group vt-group-gap">
@@ -575,107 +539,6 @@
   // filename (a different project) gets its own browser storage and its own
   // default data file, instead of sharing/overwriting this one's.
   const PROJECT_KEY = ((location.pathname.split('/').pop() || 'tareas').replace(/\.html?$/i, '')) || 'tareas';
-
-  /* ---------- auth gate (shared with index.html) ---------- */
-  const AUTH_USER_KEY = 'tareas-auth-user';
-  const AUTH_SESSION_KEY = 'tareas-auth-session';
-  const LOCAL_SAVE_KEY = 'tareas-local-save';
-
-  /* PBKDF2 password hashing via Web Crypto API */
-  function genSalt(){
-    const arr = new Uint8Array(16);
-    crypto.getRandomValues(arr);
-    return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
-  }
-  async function hashPassword(password, salt){
-    const enc = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-    const bits = await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
-      keyMaterial, 256
-    );
-    return Array.from(new Uint8Array(bits), b => b.toString(16).padStart(2, '0')).join('');
-  }
-  function getAuthUser(){
-    try{ return JSON.parse(localStorage.getItem(AUTH_USER_KEY)); }catch(e){ return null; }
-  }
-  function isLogged(){ return sessionStorage.getItem(AUTH_SESSION_KEY) === 'true'; }
-  function isLocalSave(){ return localStorage.getItem(LOCAL_SAVE_KEY) !== 'false'; }
-  /* login attempt limiting */
-  const LOGIN_ATTEMPTS_KEY = 'tareas-login-attempts';
-  function getAttempts(){
-    try{ return JSON.parse(localStorage.getItem(LOGIN_ATTEMPTS_KEY) || '{"count":0,"lockedUntil":0}'); }catch(e){ return {count:0, lockedUntil:0}; }
-  }
-  function recordFailedAttempt(){
-    const a = getAttempts();
-    a.count++;
-    if(a.count >= 5){
-      a.lockedUntil = Date.now() + 30000 * a.count;
-      a.count = 0;
-    }
-    localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(a));
-  }
-  function clearAttempts(){ localStorage.removeItem(LOGIN_ATTEMPTS_KEY); }
-  function getLockoutRemaining(){
-    const a = getAttempts();
-    const remaining = (a.lockedUntil || 0) - Date.now();
-    return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
-  }
-
-  const authGate = document.getElementById('authGate');
-  function showGate(){
-    const user = getAuthUser();
-    if(!user) document.getElementById('gateErr').textContent = 'No hay cuenta registrada. Ve a la página principal para crearla.';
-    authGate.hidden = false;
-  }
-  document.getElementById('gateLoginBtn').addEventListener('click', async () => {
-    const email = document.getElementById('gateEmail').value.trim();
-    const pwd = document.getElementById('gatePassword').value;
-    const err = document.getElementById('gateErr');
-    const u = getAuthUser();
-    if(!u){ err.textContent = 'No hay cuenta registrada. Ve a la página principal para crearla.'; return; }
-    const lockSecs = getLockoutRemaining();
-    if(lockSecs > 0){ err.textContent = 'Demasiados intentos. Espera ' + lockSecs + 's.'; return; }
-    err.textContent = 'Verificando…';
-    document.getElementById('gateLoginBtn').disabled = true;
-    let ok = false;
-    if(!u.salt){
-      let h = 0;
-      for(let i = 0; i < pwd.length; i++) h = ((h << 5) - h + pwd.charCodeAt(i)) | 0;
-      ok = u.email === email && u.passwordHash === (h >>> 0).toString(36);
-      if(ok){
-        const salt = genSalt();
-        u.salt = salt;
-        u.passwordHash = await hashPassword(pwd, salt);
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(u));
-      }
-    } else {
-      const hash = await hashPassword(pwd, u.salt);
-      ok = u.email === email && u.passwordHash === hash;
-    }
-    document.getElementById('gateLoginBtn').disabled = false;
-    if(ok){
-      clearAttempts();
-      sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
-      err.textContent = '';
-      authGate.hidden = true;
-      initPersistence();
-    } else {
-      recordFailedAttempt();
-      const secs = getLockoutRemaining();
-      err.textContent = secs > 0 ? 'Correo o contraseña incorrectos. Bloqueado ' + secs + 's.' : 'Correo o contraseña incorrectos.';
-    }
-  });
-  document.getElementById('gatePassword').addEventListener('keydown', e => {
-    if(e.key === 'Enter') document.getElementById('gateLoginBtn').click();
-  });
-  document.getElementById('gateEmail').addEventListener('keydown', e => {
-    if(e.key === 'Enter') document.getElementById('gatePassword').focus();
-  });
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    sessionStorage.removeItem(AUTH_SESSION_KEY);
-    location.reload();
-  });
 
   const PROJECT_DATA_FILENAME = PROJECT_KEY + '.json';
   const LS_KEY = 'tareas-app-v2:' + PROJECT_KEY;
@@ -897,7 +760,7 @@
   }
 
   async function persist(){
-    if(isLocalSave()) localStorage.setItem(LS_KEY, JSON.stringify(data));
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
     if(fsSupported && fileHandle){
       try{
         const perm = await fileHandle.queryPermission({ mode: 'readwrite' });
@@ -1944,8 +1807,7 @@
 
   /* ---------- init ---------- */
   renderSwatches();
-  if(isLogged()) initPersistence();
-  else showGate();
+  initPersistence();
 </script>
 </body>
 </html>
