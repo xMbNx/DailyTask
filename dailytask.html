@@ -489,7 +489,7 @@
         <li><b>✎</b> junto al nombre edita la categoría; <b>✕</b> la elimina (borra también sus tareas, pide confirmación centrada).</li>
         <li>"Ordenar grupos" (junto a "Mis categorías") reordena las categorías: <b>Carga de trabajo</b> (más tareas + subtareas primero), <b>Prioridad</b> (según la prioridad media de sus tareas, no el total — una categoría pequeña pero toda en Alta gana a una grande con prioridades mezcladas), <b>Fecha</b> (tarea o subtarea más reciente primero) o <b>Último modificado</b> (la categoría con la edición, marcado o cambio más reciente en cualquiera de sus tareas o subtareas va primero).</li>
         <li>Justo a continuación de "Mis categorías" hay una casilla por categoría para mostrar/ocultar su columna sin borrar sus datos.</li>
-        <li>Debajo del separador de cada categoría, "<b>Ordenar por:</b>" con el switch Prioridad/Fecha elige cómo se ordenan las tareas de esa categoría.</li>
+        <li>Debajo del separador de cada categoría, "<b>Ordenar por:</b>" con el switch Prioridad/Modificado elige cómo se ordenan las tareas de esa categoría (Modificado: la última tarea o subtarea tocada va primero).</li>
       </ul>
     </details>
 
@@ -623,8 +623,8 @@
   function defaultData(){
     return {
       categories: [
-        { id: uid(), name: 'Aplicación', color: '#0097b2', tasks: [], completedOpen: false, sortMode: 'date' },
-        { id: uid(), name: 'Dispositivos', color: '#0d9488', tasks: [], completedOpen: false, sortMode: 'date' }
+        { id: uid(), name: 'Aplicación', color: '#0097b2', tasks: [], completedOpen: false, sortMode: 'modified' },
+        { id: uid(), name: 'Dispositivos', color: '#0d9488', tasks: [], completedOpen: false, sortMode: 'modified' }
       ]
     };
   }
@@ -633,7 +633,7 @@
     if(!d || !Array.isArray(d.categories)) return null;
     d.categories.forEach(cat => {
       cat.completedOpen = false;
-      if(cat.sortMode !== 'priority' && cat.sortMode !== 'date') cat.sortMode = 'date';
+      if(cat.sortMode !== 'priority' && cat.sortMode !== 'modified') cat.sortMode = 'modified';
       (cat.tasks || []).forEach(t => {
         if(!PRIORITY[t.priority]) t.priority = 'media';
         if(!t.createdAt) t.createdAt = Date.now();
@@ -657,6 +657,12 @@
     return task.subtasks.reduce((sum, s) => sum + (weight[s.priority] || 0), 0);
   }
 
+  // Most recent modifiedAt of a task or any of its subtasks.
+  function taskLastModified(t){
+    let max = t.modifiedAt || t.createdAt || 0;
+    t.subtasks.forEach(s => { if((s.modifiedAt || 0) > max) max = s.modifiedAt; });
+    return max;
+  }
   function sortTasks(tasks, mode){
     return [...tasks].sort((a, b) => {
       if(mode === 'priority'){
@@ -667,7 +673,7 @@
         const cb = taskPriorityCoefficient(b);
         if(ca !== cb) return cb - ca;
       }
-      return (b.createdAt || 0) - (a.createdAt || 0);
+      return taskLastModified(b) - taskLastModified(a);
     });
   }
 
@@ -1174,7 +1180,7 @@
 
       const sortToggleBtns = document.createElement('div');
       sortToggleBtns.className = 'sort-toggle-btns';
-      [['priority', 'Prioridad'], ['date', 'Fecha']].forEach(([mode, label]) => {
+      [['priority', 'Prioridad'], ['modified', 'Modificado']].forEach(([mode, label]) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'sort-btn' + (cat.sortMode === mode ? ' active' : '');
@@ -1747,7 +1753,7 @@
   addCatBtn.addEventListener('click', () => {
     const name = newCatInput.value.trim();
     if(!name) return;
-    data.categories.push({ id: uid(), name, color: selectedColor, tasks: [], completedOpen: false, sortMode: 'date' });
+    data.categories.push({ id: uid(), name, color: selectedColor, tasks: [], completedOpen: false, sortMode: 'modified' });
     newCatInput.value = '';
     addCatBtn.disabled = true;
     categoryEditor.hidden = true;
