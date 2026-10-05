@@ -145,6 +145,16 @@
     font-size:.68rem; font-weight:700; padding:5px 6px; border-radius:999px;
   }
   .sort-btn.active{color:#fff;}
+  .eye-btn{
+    width:28px; height:28px; padding:0; display:grid; place-items:center; flex-shrink:0;
+    background:var(--bg); color:var(--muted); border:1px solid var(--border); border-radius:50%;
+  }
+  .eye-group{display:flex; align-items:center; gap:6px; margin-left:auto;}
+  .eye-label{font-size:.78rem; color:var(--muted); white-space:nowrap; cursor:pointer; user-select:none;}
+  .eye-btn:hover{color:var(--text);}
+  .eye-btn.off{color:var(--text);}
+  .eye-btn svg{display:block;}
+  .subtasks .completed-toggle{padding:6px 2px; margin-top:6px;}
 
   input[type=text]{
     padding:9px 11px; border-radius:var(--radius);
@@ -490,6 +500,7 @@
         <li>"Ordenar grupos" (junto a "Mis categorías") reordena las categorías: <b>Carga de trabajo</b> (más tareas + subtareas primero), <b>Prioridad</b> (según la prioridad media de sus tareas, no el total — una categoría pequeña pero toda en Alta gana a una grande con prioridades mezcladas), <b>Fecha</b> (tarea o subtarea más reciente primero) o <b>Último modificado</b> (la categoría con la edición, marcado o cambio más reciente en cualquiera de sus tareas o subtareas va primero).</li>
         <li>Justo a continuación de "Mis categorías" hay una casilla por categoría para mostrar/ocultar su columna sin borrar sus datos.</li>
         <li>Debajo del separador de cada categoría, "<b>Ordenar por:</b>" con el switch Prioridad/Modificado elige cómo se ordenan las tareas de esa categoría (Modificado: la última tarea o subtarea tocada va primero).</li>
+        <li>El botón del <b>ojo</b> junto a "Ordenar por" oculta lo completado de esa categoría: con el ojo tachado, las tareas completadas quedan plegadas en "Completadas" al final de la categoría y las subtareas completadas en "Completadas" al final de su tarea. Pulsa de nuevo para volver a verlas junto al resto.</li>
       </ul>
     </details>
 
@@ -633,6 +644,7 @@
     if(!d || !Array.isArray(d.categories)) return null;
     d.categories.forEach(cat => {
       cat.completedOpen = false;
+      cat.hideDone = !!cat.hideDone;
       if(cat.sortMode !== 'priority' && cat.sortMode !== 'modified') cat.sortMode = 'modified';
       (cat.tasks || []).forEach(t => {
         if(!PRIORITY[t.priority]) t.priority = 'media';
@@ -691,6 +703,8 @@
   // Transient (never persisted): which completed tasks are individually expanded
   // right now. Cleared whenever the "Completadas" section itself is collapsed.
   const completedExpandedTaskIds = new Set();
+  // Same idea for the "Completadas" group of subtasks inside a task (eye mode).
+  const completedSubsOpenTaskIds = new Set();
 
   let searchQuery = '';
   function normalizeSearchText(str){
@@ -1198,6 +1212,32 @@
       sortToggle.appendChild(sortToggleLabel);
       sortToggle.appendChild(sortToggleBtns);
 
+      const eyeBtn = document.createElement('button');
+      eyeBtn.type = 'button';
+      eyeBtn.className = 'eye-btn' + (cat.hideDone ? ' off' : '');
+      eyeBtn.setAttribute('aria-pressed', String(!!cat.hideDone));
+      eyeBtn.title = cat.hideDone ? 'Mostrar tareas y subtareas completadas' : 'Ocultar tareas y subtareas completadas';
+      eyeBtn.setAttribute('aria-label', eyeBtn.title);
+      if(cat.hideDone){ eyeBtn.style.borderColor = cat.color; eyeBtn.style.color = cat.color; }
+      eyeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>' + (cat.hideDone ? '<path d="M3 3l18 18"/>' : '') + '</svg>';
+      eyeBtn.addEventListener('click', () => {
+        cat.hideDone = !cat.hideDone;
+        if(cat.hideDone){
+          cat.completedOpen = false;
+          cat.tasks.forEach(t => { completedExpandedTaskIds.delete(t.id); completedSubsOpenTaskIds.delete(t.id); });
+        }
+        render();
+      });
+      const eyeLabel = document.createElement('span');
+      eyeLabel.className = 'eye-label';
+      eyeLabel.textContent = cat.hideDone ? 'Mostrar completadas' : 'Ocultar completadas';
+      eyeLabel.addEventListener('click', () => eyeBtn.click());
+      const eyeGroup = document.createElement('div');
+      eyeGroup.className = 'eye-group';
+      eyeGroup.appendChild(eyeLabel);
+      eyeGroup.appendChild(eyeBtn);
+      sortToggle.appendChild(eyeGroup);
+
       const addRow = document.createElement('div');
       addRow.className = 'add-task-row';
       addRow.style.borderBottomColor = `color-mix(in srgb, ${cat.color} 45%, var(--border))`;
@@ -1430,6 +1470,7 @@
     const subWrap = document.createElement('div');
     subWrap.className = 'subtasks' + (isOpen ? ' open' : '');
 
+    const doneSubRows = [];
     sortSubtasks(task.subtasks).forEach(sub => {
       const row = document.createElement('div');
       row.className = 'sub-item' + (sub.done ? ' done' : '');
@@ -1494,7 +1535,8 @@
       });
       row.appendChild(scb); row.appendChild(label); row.appendChild(subPriorityWrap);
       row.appendChild(sedit); row.appendChild(sdel);
-      subWrap.appendChild(row);
+      if(cat.hideDone && sub.done) doneSubRows.push(row);
+      else subWrap.appendChild(row);
     });
 
     const addSubRow = document.createElement('div');
@@ -1531,6 +1573,25 @@
     subInput.addEventListener('keydown', e => { if(e.key === 'Enter') addSub(); });
     addSubRow.appendChild(subInput); addSubRow.appendChild(subPriorityGroup); addSubRow.appendChild(addSubBtn);
     subWrap.appendChild(addSubRow);
+
+    if(doneSubRows.length > 0){
+      const subsOpen = completedSubsOpenTaskIds.has(task.id);
+      const subToggle = document.createElement('button');
+      subToggle.type = 'button';
+      subToggle.className = 'completed-toggle';
+      subToggle.textContent = (subsOpen ? '▾' : '▸') + ` Completadas (${doneSubRows.length})`;
+      subToggle.addEventListener('click', e => {
+        e.stopPropagation();
+        if(subsOpen) completedSubsOpenTaskIds.delete(task.id);
+        else completedSubsOpenTaskIds.add(task.id);
+        render();
+      });
+      const subDoneList = document.createElement('div');
+      subDoneList.className = 'completed-list' + (subsOpen ? ' open' : '');
+      doneSubRows.forEach(r => subDoneList.appendChild(r));
+      subWrap.appendChild(subToggle);
+      subWrap.appendChild(subDoneList);
+    }
 
     el.appendChild(subWrap);
     return el;
