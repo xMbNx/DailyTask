@@ -6,7 +6,6 @@ Gestor de tareas por categorías, 100% estático (HTML + CSS + JS, sin backend n
 
 - **[index.html](index.html)** — página de inicio: muestra el listado de tus proyectos (cada uno es un archivo `.html` independiente en la misma carpeta), con un resumen de tareas pendientes/completadas/progreso de cada uno. Desde aquí puedes crear un proyecto nuevo, renombrarlo o eliminarlo.
 - **[dailytask.html](dailytask.html)** — la aplicación de tareas en sí (plantilla base): categorías con color, tareas con prioridad y subtareas, progreso por categoría y global, búsqueda, modo claro/oscuro, y varias columnas de vista.
-- **test.html** — un proyecto de ejemplo creado a partir de la plantilla.
 
 ## Cómo funciona el almacenamiento
 
@@ -26,4 +25,4 @@ Y abrir `http://localhost:8000/index.html`.
 
 ## Crear un proyecto nuevo
 
-Desde `index.html`, pulsa "Elegir carpeta" (una vez) para dar acceso a la carpeta del proyecto, y luego "+ Nuevo proyecto". Se crea una copia de `dailytask.html` con el nombre que elijas, totalmente independiente de los demás proyectos.
+Desde `index.html`, pulsa "Elegir carpeta" (una vez) para dar acceso a la carpeta del proyecto, y luego "+ Nuevo proyecto". Se crea una copia de `dailytask.html` con el nombre que elijas, totalmente independiente de los demás proyectos. Ojo: cada proyecto es una copia de la plantilla del momento en que se creó, así que no recibe las mejoras posteriores de `dailytask.html`; para actualizarlo hay que volver a generar su `.html` desde la plantilla (los datos no se pierden, viven en el navegador o en su `.json`).

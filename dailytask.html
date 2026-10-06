@@ -149,6 +149,10 @@
     width:28px; height:28px; padding:0; display:grid; place-items:center; flex-shrink:0;
     background:var(--bg); color:var(--muted); border:1px solid var(--border); border-radius:50%;
   }
+  .folder-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px;}
+  .folder-label{font-size:.8rem; color:var(--muted);}
+  .folder-path{display:inline-flex; align-items:center; gap:6px; max-width:340px;}
+  .folder-path span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.8rem;}
   .eye-group{display:flex; align-items:center; gap:6px; margin-left:auto;}
   .eye-label{font-size:.78rem; color:var(--muted); white-space:nowrap; cursor:pointer; user-select:none;}
   .eye-btn:hover{color:var(--text);}
@@ -386,6 +390,8 @@
     background:var(--card); color:var(--text); font-size:12px; cursor:pointer;
   }
   .grid{grid-template-columns:repeat(var(--cols,4),minmax(0,1fr)); align-items:start;}
+  .grid-col{display:flex; flex-direction:column; gap:16px; min-width:0;}
+  .grid-col > .cat-column{align-self:stretch; width:100%;}
   .cat-column{gap:0; min-width:0; border:1px solid var(--border); border-top:3px solid var(--category-color); border-radius:14px; background:var(--card); overflow:hidden; box-shadow:0 3px 10px #152c4110;}
   .category{border:0; border-radius:0; padding:16px;}
   .category-name{font-size:17px; min-width:0; overflow-wrap:anywhere;}
@@ -482,7 +488,6 @@
       <select id="groupSortSelect" class="group-sort-select">
         <option value="workload">Carga de trabajo</option>
         <option value="priority">Prioridad</option>
-        <option value="date">Fecha</option>
         <option value="modified">Último modificado</option>
       </select>
     </div>
@@ -497,10 +502,10 @@
       <ul>
         <li>Pulsa el botón flotante "+" (abajo a la derecha) y elige "Nueva categoría" para abrir el formulario (nombre y color); "Cancelar" lo cierra de nuevo.</li>
         <li><b>✎</b> junto al nombre edita la categoría; <b>✕</b> la elimina (borra también sus tareas, pide confirmación centrada).</li>
-        <li>"Ordenar grupos" (junto a "Mis categorías") reordena las categorías: <b>Carga de trabajo</b> (más tareas + subtareas primero), <b>Prioridad</b> (según la prioridad media de sus tareas, no el total — una categoría pequeña pero toda en Alta gana a una grande con prioridades mezcladas), <b>Fecha</b> (tarea o subtarea más reciente primero) o <b>Último modificado</b> (la categoría con la edición, marcado o cambio más reciente en cualquiera de sus tareas o subtareas va primero).</li>
+        <li>"Ordenar grupos" (junto a "Mis categorías") reordena las categorías: <b>Carga de trabajo</b> (más tareas + subtareas primero), <b>Prioridad</b> (según la prioridad media de sus tareas, no el total — una categoría pequeña pero toda en Alta gana a una grande con prioridades mezcladas), o <b>Último modificado</b> (la categoría con la edición, marcado o cambio más reciente en cualquiera de sus tareas o subtareas va primero).</li>
         <li>Justo a continuación de "Mis categorías" hay una casilla por categoría para mostrar/ocultar su columna sin borrar sus datos.</li>
         <li>Debajo del separador de cada categoría, "<b>Ordenar por:</b>" con el switch Prioridad/Modificado elige cómo se ordenan las tareas de esa categoría (Modificado: la última tarea o subtarea tocada va primero).</li>
-        <li>El botón del <b>ojo</b> junto a "Ordenar por" oculta lo completado de esa categoría: con el ojo tachado, las tareas completadas quedan plegadas en "Completadas" al final de la categoría y las subtareas completadas en "Completadas" al final de su tarea. Pulsa de nuevo para volver a verlas junto al resto.</li>
+        <li>El botón del <b>ojo</b> junto a "Ordenar por" oculta lo completado de esa categoría: con el ojo tachado, las tareas completadas quedan plegadas en "Completadas" al final de la categoría y las subtareas completadas en "Completadas" al final de su tarea. Está activo por defecto en todas las categorías (lo completado queda oculto); púlsalo de nuevo para volver a verlas junto al resto.</li>
       </ul>
     </details>
 
@@ -526,10 +531,9 @@
     <details>
       <summary>Búsqueda y resumen</summary>
       <ul>
-        <li>Arriba del todo, 5 tarjetas: el banner "Daily Task" y 4 de resumen: <b>Tareas pendientes</b>, <b>Tareas completadas</b>, <b>Progreso por tareas</b> (% de tareas marcadas como completadas) y <b>Progreso Total</b>.</li>
-        <li><b>Progreso Total</b> pondera por carga de trabajo: una tarea con muchas subtareas pesa más que una con una sola o ninguna, así que refleja mejor el esfuerzo real que el simple % de tareas completadas. Su tarjeta incluye además un anillo circular con el mismo porcentaje.</li>
-        <li>El buscador (botón flotante "+" → "Buscar") filtra tareas y subtareas por palabra, sin distinguir mayúsculas ni acentos, y resalta la coincidencia en el nombre.</li>
-        <li>Las tarjetas de arriba resumen tareas totales, pendientes, completadas y progreso, y cada una muestra una línea de progreso en su parte inferior.</li>
+        <li>Arriba del todo, el banner "Daily Task" y 5 tarjetas de resumen: <b>Tareas totales</b>, <b>Tareas pendientes</b>, <b>Tareas completadas</b>, <b>Progreso por tareas</b> (% de tareas marcadas como completadas) y <b>Progreso Total</b>. Todas miden lo mismo y quedan centradas; cada una lleva una línea de progreso en su parte inferior.</li>
+        <li><b>Progreso Total</b> pondera por carga de trabajo: una tarea con muchas subtareas pesa más que una con una sola o ninguna, así que refleja mejor el esfuerzo real que el simple % de tareas completadas. Su tarjeta incluye además un anillo circular con el mismo porcentaje, dividido en tramos con el color de cada categoría según lo que ha completado cada una.</li>
+        <li>El buscador (botón flotante "+" → "Buscar") filtra tareas y subtareas por palabra, sin distinguir mayúsculas ni acentos, y resalta la coincidencia en el nombre. Debajo del campo aparece la lista de coincidencias (con su categoría, y la tarea si es una subtarea); al pulsar una te lleva a ella y la marca un momento. Al cerrar el buscador se borra el filtro.</li>
         <li>La cabecera de cada categoría incluye su propia mini barra de progreso y una píldora "X Tareas / X Completadas".</li>
       </ul>
     </details>
@@ -537,9 +541,9 @@
     <details>
       <summary>Vista de la página</summary>
       <ul>
-        <li>En la fila de controles: la fecha de hoy, el botón "<b>Guía rápida</b>" (siempre con el borde resaltado, salta a esta guía) y el modo <b>claro/oscuro</b> (borde resaltado también) — este último alterna el tema y recuerda tu elección.</li>
+        <li>En la fila de controles: la fecha de hoy, el botón "<b>← Volver a proyectos</b>" (lleva a la página de inicio), el botón "<b>Guía rápida</b>" (siempre con el borde resaltado, salta a esta guía) y el modo <b>claro/oscuro</b> (borde resaltado también) — este último alterna el tema y recuerda tu elección.</li>
         <li><b>Tamaño de vista</b>: escala toda la página (80%–150%).</li>
-        <li><b>Columnas</b>: elige 2, 3 o 4 columnas; se reduce solo si la ventana es muy estrecha. Las columnas quedan centradas.</li>
+        <li><b>Columnas</b>: elige 2, 3 o 4 columnas; se reduce solo si la ventana es muy estrecha. Las categorías conservan el orden elegido y cada una se coloca en la columna que tenga más hueco en ese momento (la más baja), así quedan lo más juntas posible y no se dejan huecos grandes aunque una columna sea mucho más alta que otra.</li>
         <li>Todas estas preferencias de vista se recuerdan en este navegador.</li>
       </ul>
     </details>
@@ -552,8 +556,14 @@
         <li>Cada navegador debe vincularse una vez: es un permiso de seguridad del propio navegador, no se puede evitar.</li>
         <li>Aun sin vincular, el navegador puede leer el archivo de datos existente si otro navegador ya lo guardó.</li>
         <li><b>Exportar/Importar JSON</b> (en el toolbar de vista) sirven como respaldo manual o para mover los datos a otro sitio.</li>
+        <li>Al final de la página, bajo esta guía, el botón <b>Carpeta del proyecto</b> muestra la ruta de la carpeta donde está este HTML; al pulsarlo se copia. Si abres la página por <b>http</b> (en vez de desde el disco), el navegador no revela la ruta: se escribe una vez y se recuerda (Mayús+clic para cambiarla).</li>
       </ul>
     </details>
+  </div>
+
+  <div class="folder-row">
+    <span class="folder-label">Carpeta del proyecto</span>
+    <button id="folderPathBtn" class="vt-btn folder-path" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span id="folderPathText"></span></button>
   </div>
 </div>
 
@@ -634,8 +644,8 @@
   function defaultData(){
     return {
       categories: [
-        { id: uid(), name: 'Aplicación', color: '#0097b2', tasks: [], completedOpen: false, sortMode: 'modified' },
-        { id: uid(), name: 'Dispositivos', color: '#0d9488', tasks: [], completedOpen: false, sortMode: 'modified' }
+        { id: uid(), name: 'Aplicación', color: '#0097b2', tasks: [], completedOpen: false, sortMode: 'modified', hideDone: true, hideDoneInit: true },
+        { id: uid(), name: 'Dispositivos', color: '#0d9488', tasks: [], completedOpen: false, sortMode: 'modified', hideDone: true, hideDoneInit: true }
       ]
     };
   }
@@ -644,7 +654,10 @@
     if(!d || !Array.isArray(d.categories)) return null;
     d.categories.forEach(cat => {
       cat.completedOpen = false;
-      cat.hideDone = !!cat.hideDone;
+      // Default: completed items hidden (eye crossed). hideDoneInit marks categories
+      // already migrated, so later manual toggles are respected.
+      if(!cat.hideDoneInit){ cat.hideDone = true; cat.hideDoneInit = true; }
+      else cat.hideDone = !!cat.hideDone;
       if(cat.sortMode !== 'priority' && cat.sortMode !== 'modified') cat.sortMode = 'modified';
       (cat.tasks || []).forEach(t => {
         if(!PRIORITY[t.priority]) t.priority = 'media';
@@ -899,7 +912,7 @@
       return;
     }
     if(kind === 'reconnect'){
-      el.innerHTML = `<div class="banner"><span class="note">El archivo de datos necesita permiso de nuevo.</span><button id="reconnectBtn">Reconectar</button></div>`;
+      el.innerHTML = `<div class="banner"><span class="note">Tus tareas siguen guardadas en este navegador. Chrome pide permiso de nuevo para escribir también en el archivo de datos; pulsa Reconectar cuando quieras volver a sincronizarlo.</span><button id="reconnectBtn">Reconectar</button></div>`;
       document.getElementById('reconnectBtn').addEventListener('click', reconnectFile);
       return;
     }
@@ -987,17 +1000,8 @@
     // outrank another just for having more tasks — that's what "Carga de
     // trabajo" is for. This isolates how high-priority its tasks typically are.
   }
-  function categoryLastActivity(cat){
-    let max = 0;
-    cat.tasks.forEach(t => {
-      if(t.createdAt > max) max = t.createdAt;
-      t.subtasks.forEach(s => { if(s.createdAt > max) max = s.createdAt; });
-    });
-    return max;
-  }
-  // Like categoryLastActivity, but by modifiedAt: bumped by edits, checkbox
-  // toggles and priority changes on a task or any of its subtasks — not just
-  // by when they were first created.
+  // Most recent modifiedAt: bumped by edits, checkbox toggles and priority
+  // changes on a task or any of its subtasks.
   function categoryLastModified(cat){
     let max = 0;
     cat.tasks.forEach(t => {
@@ -1012,8 +1016,6 @@
       arr.sort((a, b) => categoryWorkload(b) - categoryWorkload(a));
     } else if(mode === 'priority'){
       arr.sort((a, b) => categoryPriorityCoefficient(b) - categoryPriorityCoefficient(a));
-    } else if(mode === 'date'){
-      arr.sort((a, b) => categoryLastActivity(b) - categoryLastActivity(a));
     } else if(mode === 'modified'){
       arr.sort((a, b) => categoryLastModified(b) - categoryLastModified(a));
     }
@@ -1097,9 +1099,88 @@
     }
   }
 
-  function renderGrid(){
+  // Masonry packing: cards keep the chosen order, and each one goes into the column
+  // that is currently the shortest, so empty space stays as small as possible.
+  let gridItems = [];
+  function placeGrid(onlyIfColsChanged){
     const grid = document.getElementById('grid');
+    const n = Math.max(1, Math.min(chosenCols, breakpointMaxCols()));
+    if(onlyIfColsChanged && grid.querySelectorAll(':scope > .grid-col').length === n) return;
+    const prevHeight = grid.offsetHeight;
+    if(prevHeight) grid.style.minHeight = prevHeight + 'px';
     grid.innerHTML = '';
+    const cols = [];
+    for(let i = 0; i < n; i++){
+      const c = document.createElement('div');
+      c.className = 'grid-col';
+      grid.appendChild(c);
+      cols.push(c);
+    }
+    gridItems.forEach(el => {
+      let target = cols[0], shortest = Infinity;
+      cols.forEach(c => {
+        const h = c.getBoundingClientRect().height;
+        if(h < shortest - 0.5){ shortest = h; target = c; }
+      });
+      target.appendChild(el);
+    });
+    grid.style.minHeight = '';
+  }
+  // FLIP: remember where every category card and task is, rebuild, then slide each
+  // one from its old spot to the new one so reordering (e.g. "Último modificado")
+  // is followed by the eye instead of jumping.
+  function snapshotLayout(){
+    const map = new Map();
+    const sx = window.scrollX, sy = window.scrollY;
+    document.querySelectorAll('#grid .cat-column[data-cat-id]').forEach(card => {
+      const r = card.getBoundingClientRect();
+      const catId = card.dataset.catId;
+      map.set('c:' + catId, { x: r.left + sx, y: r.top + sy });
+      card.querySelectorAll('.task[data-task-id]').forEach(t => {
+        const q = t.getBoundingClientRect();
+        map.set('t:' + t.dataset.taskId, { cat: catId, x: q.left - r.left, y: q.top - r.top });
+      });
+    });
+    return map;
+  }
+  function slide(el, dx, dy, lift){
+    if(Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    if(lift){ el.style.position = 'relative'; el.style.zIndex = '3'; }
+    const anim = el.animate(
+      [{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }],
+      { duration: 450, easing: 'cubic-bezier(.22,.7,.2,1)' }
+    );
+    if(lift){
+      const done = () => { el.style.position = ''; el.style.zIndex = ''; };
+      anim.finished.then(done, done);
+    }
+  }
+  function playFlip(before){
+    if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const z = (typeof zoomVal === 'number' && zoomVal > 0 ? zoomVal : 100) / 100;
+    const sx = window.scrollX, sy = window.scrollY;
+    document.querySelectorAll('#grid .cat-column[data-cat-id]').forEach(card => {
+      const r = card.getBoundingClientRect();
+      const catId = card.dataset.catId;
+      const oldCard = before.get('c:' + catId);
+      if(oldCard) slide(card, (oldCard.x - (r.left + sx)) / z, (oldCard.y - (r.top + sy)) / z, true);
+      card.querySelectorAll('.task[data-task-id]').forEach(t => {
+        const o = before.get('t:' + t.dataset.taskId);
+        if(!o || o.cat !== catId) return;
+        const q = t.getBoundingClientRect();
+        slide(t, (o.x - (q.left - r.left)) / z, (o.y - (q.top - r.top)) / z, false);
+      });
+    });
+  }
+  function renderGrid(){
+    const before = snapshotLayout();
+    const y0 = window.scrollY;
+    renderGridInner();
+    if(Math.abs(window.scrollY - y0) > 1) window.scrollTo({ top: y0, behavior: 'instant' });
+    playFlip(before);
+  }
+  function renderGridInner(){
+    const items = [];
 
     sortCategories(data.categories, groupSortMode).forEach(cat => {
       if(hiddenCategories.has(cat.id)) return;
@@ -1107,6 +1188,7 @@
       const column = document.createElement('div');
       column.className = 'cat-column';
       column.style.setProperty('--category-color', cat.color);
+      column.dataset.catId = cat.id;
 
       const card = document.createElement('div');
       card.className = 'category';
@@ -1306,9 +1388,12 @@
       }
 
       column.appendChild(card);
-      grid.appendChild(column);
+      items.push(column);
     });
-    if(!grid.children.length){
+    gridItems = items;
+    placeGrid();
+    if(!items.length){
+      const grid = document.getElementById('grid');
       const empty = document.createElement('div');
       empty.className = 'board-empty';
       empty.textContent = data.categories.length ? 'Todas las categorías están ocultas. Activa una en «Mostrar» para verla aquí.' : 'Tu tablero está listo. Crea tu primera categoría para empezar.';
@@ -1814,7 +1899,7 @@
   addCatBtn.addEventListener('click', () => {
     const name = newCatInput.value.trim();
     if(!name) return;
-    data.categories.push({ id: uid(), name, color: selectedColor, tasks: [], completedOpen: false, sortMode: 'modified' });
+    data.categories.push({ id: uid(), name, color: selectedColor, tasks: [], completedOpen: false, sortMode: 'modified', hideDone: true, hideDoneInit: true });
     newCatInput.value = '';
     addCatBtn.disabled = true;
     categoryEditor.hidden = true;
@@ -1984,6 +2069,59 @@
     URL.revokeObjectURL(url);
   });
   document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+
+  // Shows where this project lives. Opened from disk (file://) the full path comes
+  // from the page URL; served over http the browser hides it, so it is typed once
+  // and remembered. Click copies it (Shift+click edits a typed one).
+  const FOLDER_PATH_KEY = 'tareas-folder-path';
+  const folderBtn = document.getElementById('folderPathBtn');
+  const folderText = document.getElementById('folderPathText');
+  function projectFolderFromLocation(){
+    if(location.protocol !== 'file:') return null;
+    const dir = decodeURIComponent(location.pathname).replace(/[^/]*$/, '');
+    if(location.host) return '\\\\' + location.host + dir.replace(/\//g, '\\');
+    return dir.replace(/^\//, '').replace(/\//g, '\\');
+  }
+  function currentFolderPath(){
+    const p = projectFolderFromLocation() || localStorage.getItem(FOLDER_PATH_KEY) || '';
+    return p.length > 3 ? p.replace(/[\\/]+$/, '') : p;
+  }
+  function renderFolderPath(){
+    const p = currentFolderPath();
+    folderText.textContent = p || 'Indicar carpeta del proyecto';
+    folderBtn.title = p
+      ? p + ' — clic para copiar la ruta' + (projectFolderFromLocation() ? '' : ', Mayús+clic para cambiarla')
+      : 'El navegador no revela la ruta cuando se abre por http: indícala una vez';
+  }
+  function copyText(text){
+    if(navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    return Promise.resolve();
+  }
+  folderBtn.addEventListener('click', e => {
+    const fromUrl = projectFolderFromLocation();
+    let path = currentFolderPath();
+    if(!fromUrl && (!path || e.shiftKey)){
+      const typed = prompt('Ruta completa de la carpeta del proyecto:', path);
+      if(typed === null) return;
+      path = typed.trim();
+      if(path) localStorage.setItem(FOLDER_PATH_KEY, path);
+      else localStorage.removeItem(FOLDER_PATH_KEY);
+      renderFolderPath();
+      return;
+    }
+    copyText(path).then(() => {
+      folderText.textContent = 'Ruta copiada';
+      setTimeout(renderFolderPath, 1200);
+    });
+  });
+  renderFolderPath();
   document.getElementById('importFile').addEventListener('change', async e => {
     const file = e.target.files[0];
     if(!file) return;
@@ -2003,7 +2141,7 @@
   /* ---------- group sort ---------- */
   const GROUP_SORT_KEY = 'tareas-view-group-sort';
   let groupSortMode = localStorage.getItem(GROUP_SORT_KEY);
-  if(!['workload', 'priority', 'date', 'modified'].includes(groupSortMode)) groupSortMode = 'workload';
+  if(!['workload', 'priority', 'modified'].includes(groupSortMode)) groupSortMode = 'workload';
   const groupSortSelect = document.getElementById('groupSortSelect');
   groupSortSelect.value = groupSortMode;
   groupSortSelect.addEventListener('change', () => {
@@ -2069,6 +2207,7 @@
   function applyGridCols(){
     const effective = Math.min(chosenCols, breakpointMaxCols());
     document.getElementById('grid').style.setProperty('--cols', effective);
+    placeGrid(true);
     colBtns.forEach(b => b.classList.toggle('active', parseInt(b.dataset.cols, 10) === chosenCols));
   }
   colBtns.forEach(b => {

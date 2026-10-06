@@ -158,6 +158,19 @@
   let dirHandle = null;
   let lastProjects = [];
 
+  // Chrome drops the folder permission between visits, and without it the folder
+  // can't be listed. The last scanned list is kept so the home page is never empty.
+  const PROJECTS_CACHE_KEY = 'tareas-projects-cache';
+  function cachedProjects(){
+    try{
+      const list = JSON.parse(localStorage.getItem(PROJECTS_CACHE_KEY) || '[]');
+      return Array.isArray(list) ? list.filter(p => p && p.file && p.name) : [];
+    }catch(e){ return []; }
+  }
+  function cacheProjects(list){
+    try{ localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(list)); }catch(e){ /* storage full/blocked */ }
+  }
+
   /* ---------- IndexedDB (stores the directory handle) ---------- */
   function idbOpen(){
     return new Promise((resolve, reject) => {
@@ -274,19 +287,19 @@
       return;
     }
     if(kind === 'reconnect'){
-      el.innerHTML = `<div class="banner"><span class="note">Se necesita permiso de nuevo para acceder a la carpeta de proyectos.</span><button id="reconnectBtn">Reconectar</button></div>`;
+      el.innerHTML = `<div class="banner"><span class="note">Se muestra el último listado guardado. Concede de nuevo el permiso a la carpeta para actualizarlo y poder crear, renombrar o eliminar proyectos.</span><button id="reconnectBtn">Reconectar</button></div>`;
       document.getElementById('reconnectBtn').addEventListener('click', reconnectDir);
       return;
     }
     if(kind === 'setup'){
-      el.innerHTML = `<div class="banner"><span class="note">Elige la carpeta donde están tus archivos de proyecto (por ejemplo, esta misma carpeta <b>DailyTask</b>) para ver el listado y poder crear o eliminar proyectos.</span><button id="chooseDirBtn">Elegir carpeta</button></div>`;
+      el.innerHTML = `<div class="banner"><span class="note">Elige la carpeta donde está este <b>index.html</b> junto con los proyectos (.html), por ejemplo <b>DailyTask</b> — no la carpeta de datos (.json). Así verás el listado y podrás crear, renombrar o eliminar proyectos.</span><button id="chooseDirBtn">Elegir carpeta</button></div>`;
       document.getElementById('chooseDirBtn').addEventListener('click', chooseDir);
       return;
     }
     el.innerHTML = '';
   }
 
-  function renderGrid(projects){
+  function renderGrid(projects, scanned){
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
 
@@ -334,7 +347,24 @@
     if(projects.length === 0 && dirHandle){
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = 'No se han encontrado proyectos (.html) en la carpeta elegida.';
+      const msg = document.createElement('span');
+      if(scanned){
+        msg.textContent = lastJsonCount > 0
+          ? 'La carpeta «' + dirHandle.name + '» solo contiene archivos de datos (.json), no los .html de los proyectos. Elige la carpeta donde está index.html (la que contiene dailytask.html).'
+          : 'No se han encontrado proyectos (.html) en la carpeta «' + dirHandle.name + '». Elige la carpeta donde está index.html (la que contiene dailytask.html).';
+      } else {
+        msg.textContent = 'Pulsa «Reconectar» para volver a leer la carpeta «' + dirHandle.name + '» y ver tus proyectos.';
+      }
+      empty.appendChild(msg);
+      if(scanned){
+        const other = document.createElement('button');
+        other.type = 'button';
+        other.className = 'ghost';
+        other.style.marginLeft = '10px';
+        other.textContent = 'Elegir otra carpeta';
+        other.addEventListener('click', chooseDir);
+        empty.appendChild(other);
+      }
       grid.prepend(empty);
     }
   }
@@ -344,10 +374,13 @@
   }
 
   /* ---------- scanning the directory ---------- */
+  let lastJsonCount = 0;
   async function scanProjects(){
     const projects = [];
+    let jsonCount = 0;
     for await (const [name, handle] of dirHandle.entries()){
       if(handle.kind !== 'file') continue;
+      if(/\.json$/i.test(name)) jsonCount++;
       if(!/\.html?$/i.test(name)) continue;
       if(name.toLowerCase() === 'index.html') continue;
       let title = name.replace(/\.html?$/i, '');
@@ -360,18 +393,30 @@
     }
     projects.sort((a, b) => a.name.localeCompare(b.name, 'es'));
     lastProjects = projects;
-    renderGrid(projects);
+    lastJsonCount = jsonCount;
+    cacheProjects(projects);
+    renderGrid(projects, true);
   }
 
   /* ---------- directory linking ---------- */
   async function chooseDir(){
     try{
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const handle = await window.showDirectoryPicker({ id: 'tareas-proyectos', mode: 'readwrite' });
       dirHandle = handle;
       await idbSet('projectsDir', handle);
       renderBanner('none');
       await scanProjects();
     }catch(e){ /* user cancelled */ }
+  }
+
+  async function ensureAccess(){
+    if(!dirHandle) return false;
+    try{
+      if(await dirHandle.queryPermission({ mode: 'readwrite' }) === 'granted') return true;
+      if(await dirHandle.requestPermission({ mode: 'readwrite' }) !== 'granted') return false;
+      renderBanner('none');
+      return true;
+    }catch(e){ console.warn(e); return false; }
   }
 
   async function reconnectDir(){
@@ -387,7 +432,7 @@
   async function initPersistence(){
     if(!fsSupported){
       renderBanner('nosupport');
-      renderGrid([]);
+      renderGrid(cachedProjects());
       return;
     }
     try{
@@ -401,12 +446,13 @@
           return;
         }
         renderBanner('reconnect');
-        renderGrid([]);
+        lastProjects = cachedProjects();
+        renderGrid(lastProjects);
         return;
       }
     }catch(e){ console.warn(e); }
     renderBanner('setup');
-    renderGrid([]);
+    renderGrid(cachedProjects());
   }
 
   async function getTemplateHandle(){
@@ -443,6 +489,7 @@
     if(!slug || slug === 'index'){ newNameErr.textContent = 'Nombre no válido, prueba con otro.'; return; }
     const fileName = slug + '.html';
 
+    if(!(await ensureAccess())){ newNameErr.textContent = 'Hace falta el permiso de la carpeta.'; return; }
     try{
       let exists = true;
       try{ await dirHandle.getFileHandle(fileName); }catch(e){ exists = false; }
@@ -469,6 +516,7 @@
 
   /* ---------- edit project name ---------- */
   async function editProjectName(fileName, currentName){
+    if(!(await ensureAccess())) return;
     const input = prompt('Nuevo nombre del proyecto:', currentName);
     if(input === null) return;
     const trimmed = input.trim();
@@ -490,6 +538,7 @@
 
   /* ---------- delete project ---------- */
   async function deleteProject(fileName, name){
+    if(!(await ensureAccess())) return;
     const ok = confirm(`¿Eliminar el proyecto "${name}"?\n\nSe borrará el archivo "${fileName}" de la carpeta. Esta acción no se puede deshacer.\n\n(Su archivo de datos .json, si existe con ese mismo nombre, no se borra automáticamente.)`);
     if(!ok) return;
     try{
