@@ -449,6 +449,7 @@
     <a href="index.html" class="vt-btn vt-btn-outline">← Volver a proyectos</a>
     <a href="#guide" class="vt-btn vt-btn-highlight">Guía rápida</a>
     <button id="themeToggleBtn" class="vt-btn vt-btn-outline"></button>
+    <button id="signOutBtn" class="vt-btn vt-btn-outline">Cerrar sesión</button>
     <div class="vt-group vt-group-gap">
       <span class="vt-label">Tamaño de vista</span>
       <button id="zoomOut" class="vt-btn small">−</button>
@@ -855,6 +856,10 @@
     flushSave();
     e.preventDefault();
     e.returnValue = '';
+  });
+  document.getElementById('signOutBtn').addEventListener('click', async () => {
+    if(hasUnsavedChanges() && !(await flushSave())) return;
+    DT.signOut();
   });
   document.querySelector('a[href="index.html"]').addEventListener('click', async e => {
     if(!hasUnsavedChanges()) return;
