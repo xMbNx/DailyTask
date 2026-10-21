@@ -1,28 +1,37 @@
 # Daily Task
 
-Gestor de tareas por categorías, 100% estático (HTML + CSS + JS, sin backend ni build) pensado para usarse en local.
+Gestor de tareas por categorías. Frontend estático (HTML + CSS + JS, sin build) desplegado en Vercel, con los datos y el inicio de sesión en Supabase.
 
 ## ¿Qué incluye?
 
-- **[index.html](index.html)** — página de inicio: muestra el listado de tus proyectos (cada uno es un archivo `.html` independiente en la misma carpeta), con un resumen de tareas pendientes/completadas/progreso de cada uno. Desde aquí puedes crear un proyecto nuevo, renombrarlo o eliminarlo.
-- **[dailytask.html](dailytask.html)** — la aplicación de tareas en sí (plantilla base): categorías con color, tareas con prioridad y subtareas, progreso por categoría y global, búsqueda, modo claro/oscuro, y varias columnas de vista.
+- **[index.html](index.html)** — página de inicio: listado de tus proyectos con su resumen (pendientes, completadas, progreso). Desde aquí se crean, renombran y eliminan proyectos.
+- **[dailytask.html](dailytask.html)** — la aplicación de tareas: categorías con color, tareas con prioridad y subtareas, progreso por categoría y global, búsqueda, modo claro/oscuro y varias columnas de vista. Se abre como `dailytask.html?p=<proyecto>`.
+- **[auth.js](auth.js)** — cliente de Supabase y pantalla de inicio de sesión, compartidos por las dos páginas.
+- **[config.js](config.js)** — URL y clave pública (anon) de tu proyecto de Supabase.
+- **[supabase/schema.sql](supabase/schema.sql)** — tabla `projects` y políticas de seguridad (RLS).
 
-## Cómo funciona el almacenamiento
+## Cómo se guardan los datos
 
-Cada proyecto guarda sus datos en el `localStorage` del navegador, namespaced por el nombre del propio archivo `.html` (así, `dailytask.html` y una copia `mi-proyecto.html` no comparten datos). Opcionalmente, en Chrome/Edge de escritorio se puede vincular un archivo `.json` en la misma carpeta (vía File System Access API) para guardar ahí una copia legible de los datos.
+Cada proyecto es una fila de la tabla `projects`, con todo su tablero en una columna `jsonb` (`{ "categories": [...] }`, el mismo formato que exporta "Exportar JSON"). Los cambios se guardan solos, un instante después de hacerlos. Si el mismo proyecto se modifica desde otra pestaña o dispositivo, la app lo detecta (por `updated_at`) y pregunta en vez de sobrescribir.
 
-Al ser una app 100% cliente, **no hay sincronización entre dispositivos ni navegadores**: los datos viven donde los guardes (ese navegador, o ese archivo `.json` local).
+Las políticas RLS hacen que cada usuario solo pueda leer y modificar sus propios proyectos. La anon key de `config.js` es pública por diseño.
 
-## Cómo usarlo
+Las preferencias de vista (tema, zoom, columnas, categorías ocultas) siguen en el `localStorage` de cada navegador.
 
-Al no usar módulos ES ni build, basta con abrir `index.html` en el navegador. Algunas funciones (como `fetch` de archivos vecinos o crear/eliminar proyectos desde `index.html`) requieren servirlo por HTTP en vez de abrirlo con doble clic, por ejemplo:
+## Puesta en marcha
+
+1. **Supabase**: crea un proyecto en [supabase.com](https://supabase.com).
+   - SQL Editor → pega [supabase/schema.sql](supabase/schema.sql) → Run.
+   - Authentication → Users → *Add user* con tu email y contraseña.
+   - Authentication → Sign In / Providers → desactiva *Allow new users to sign up*, para que nadie más pueda registrarse.
+2. **Config**: copia la *Project URL* y la *anon key* (Project Settings → API) en [config.js](config.js).
+3. **Vercel**: sube el repo a GitHub e impórtalo en Vercel (Framework preset: *Other*, sin build command ni output directory). [vercel.json](vercel.json) ya permite las conexiones a `*.supabase.co`.
+4. **Migrar datos antiguos**: en la web, crea el proyecto (por ejemplo "IoT Fenster"), ábrelo y usa *Importar JSON* con su antiguo `.json`.
+
+## Desarrollo local
+
+Sirve la carpeta por HTTP y abre `http://localhost:8000`:
 
 ```bash
 python -m http.server 8000
 ```
-
-Y abrir `http://localhost:8000/index.html`.
-
-## Crear un proyecto nuevo
-
-Desde `index.html`, pulsa "Elegir carpeta" (una vez) para dar acceso a la carpeta del proyecto, y luego "+ Nuevo proyecto". Se crea una copia de `dailytask.html` con el nombre que elijas, totalmente independiente de los demás proyectos. Ojo: cada proyecto es una copia de la plantilla del momento en que se creó, así que no recibe las mejoras posteriores de `dailytask.html`; para actualizarlo hay que volver a generar su `.html` desde la plantilla (los datos no se pierden, viven en el navegador o en su `.json`).

@@ -1,0 +1,8 @@
+# Datos de proyectos (ahora viven en Supabase; los .json locales son solo copias/exportaciones)
+*.json
+!vercel.json
+
+# Copias antiguas de proyecto generadas desde la plantilla
+iot-fenster.html
+
+.vercel
