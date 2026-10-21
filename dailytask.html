@@ -291,8 +291,10 @@
   h1{font-size:30px; letter-spacing:-1px; margin:4px 0; line-height:1.2;}
   .workspace-heading p{margin:8px 0 0; color:var(--muted); font-size:13px;}
   .heading-action{display:flex; align-items:center; gap:8px; white-space:nowrap;}
-  .overview{display:grid; grid-template-columns:auto repeat(5,1fr); width:max-content; max-width:100%; gap:12px; margin:28px auto 22px;}
+  .overview{display:grid; grid-template-columns:auto repeat(5,1fr) auto; width:max-content; max-width:100%; gap:12px; margin:28px auto 22px;}
   .overview-item.overview-banner-item{padding:0; overflow:hidden;}
+  .project-title{display:flex; align-items:center; justify-content:center; margin:0; padding:12px 22px; width:254px; text-align:center; font-size:30px; line-height:1.2; letter-spacing:-.4px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:inset 0 -5px 0 var(--accent);}
+  .project-title[hidden]{display:none;}
   .overview-banner-img{height:84px; width:auto; max-width:100%; object-fit:contain; border-radius:var(--radius); display:block;}
   .overview-item{position:relative; overflow:hidden; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px 16px; display:flex; align-items:center; justify-content:center; gap:16px;}
   .overview-item:not(.overview-banner-item){display:grid; grid-template-columns:auto auto auto; align-items:center; justify-content:center; align-content:center; gap:3px 0; text-align:center;}
@@ -416,7 +418,7 @@
   .desktop-status[data-failed=true]::before{background:var(--danger);}
   .modal-overlay{backdrop-filter:blur(5px);}
   .modal-box{padding:26px; border-radius:18px;}
-  @media(max-width:760px){body{padding:0 16px 30px;} .fab{right:16px; bottom:16px;} .fab-panel{right:16px; bottom:88px;} .overview{gap:8px; grid-template-columns:repeat(3,1fr); width:auto;} .overview-banner-item{grid-column:1 / -1;} .overview-banner-img{width:100%; height:auto; max-height:84px;} .overview-item{padding:10px 12px 14px;} .workspace-heading{align-items:flex-start;} .view-toolbar{gap:12px;} .vt-group-right{margin-left:0;} .group-sort .vt-label{display:none;}}
+  @media(max-width:760px){body{padding:0 16px 30px;} .fab{right:16px; bottom:16px;} .fab-panel{right:16px; bottom:88px;} .overview{gap:8px; grid-template-columns:repeat(3,1fr); width:auto;} .overview-banner-item, .project-title{grid-column:1 / -1;} .project-title{width:auto;} .overview-banner-img{width:100%; height:auto; max-height:84px;} .overview-item{padding:10px 12px 14px;} .workspace-heading{align-items:flex-start;} .view-toolbar{gap:12px;} .vt-group-right{margin-left:0;} .group-sort .vt-label{display:none;}}
   @media(max-width:440px){.overview{grid-template-columns:repeat(2,1fr); width:auto;} h1{font-size:25px;} .workspace-heading{flex-wrap:wrap;} .overview-value{font-size:23px;} .overview-label{font-size:10px;} .swatches{gap:7px;} .add-cat-row{gap:14px;} .vt-group{flex-wrap:wrap;}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
@@ -438,7 +440,9 @@
         <g id="totalProgressRing" transform="rotate(-90 20 20)"></g>
       </svg>
       <div class="ov-line" aria-hidden="true"><div id="totalProgressLine" class="ov-line-fill"></div></div>
-    </div></section>
+    </div>
+    <h1 id="projectTitle" class="project-title" hidden></h1>
+  </section>
 
   <div class="view-toolbar">
     <span id="headerDate" class="header-date"></span>
@@ -763,11 +767,50 @@
 
     projectRow = { id: row.id, updated_at: row.updated_at };
     document.title = row.name;
+    const titleEl = document.getElementById('projectTitle');
+    titleEl.textContent = '';
+    titleEl.appendChild(document.createElement('span')).textContent = row.name;
+    titleEl.hidden = false;
+    fitProjectTitle();
     data = normalizeData(row.data) || defaultData();
     // A brand-new project (data null) gets its default categories saved right away.
     lastSavedJson = row.data ? JSON.stringify(data) : null;
     render();
   }
+
+  // Largest font size at which the project name fits its card: one line if it
+  // can stay reasonably big, otherwise up to two lines; very long words only
+  // get broken as a last resort at the minimum size.
+  const TITLE_MAX_PX = 30, TITLE_MIN_PX = 14, TITLE_ONE_LINE_MIN_PX = 22;
+  function fitProjectTitle(){
+    const el = document.getElementById('projectTitle');
+    if(el.hidden) return;
+    const text = el.firstChild;
+    // Next to the other overview cards it must not make the row taller than the
+    // logo card; on its own row (narrow screens) only the line count limits it.
+    const banner = document.querySelector('.overview-banner-item');
+    const maxHeight = Math.abs(banner.offsetTop - el.offsetTop) < 2
+      ? banner.querySelector('img').offsetHeight + 2   // logo height + card border
+      : Infinity;
+    const padY = parseFloat(getComputedStyle(el).paddingTop) * 2 + 2;
+    function fits(size, maxLines){
+      el.style.fontSize = size + 'px';
+      const lines = Math.round(text.offsetHeight / (size * 1.2));
+      return el.scrollWidth <= el.clientWidth && text.offsetHeight + padY <= maxHeight && lines <= maxLines;
+    }
+    el.style.overflowWrap = '';
+    el.style.whiteSpace = 'nowrap';
+    for(let size = TITLE_MAX_PX; size >= TITLE_ONE_LINE_MIN_PX; size--){
+      if(fits(size, 1)){ el.style.whiteSpace = ''; return; }
+    }
+    el.style.whiteSpace = '';
+    for(let size = TITLE_MAX_PX; size > TITLE_MIN_PX; size--){
+      if(fits(size, 2)) return;
+    }
+    el.style.fontSize = TITLE_MIN_PX + 'px';
+    el.style.overflowWrap = 'anywhere';
+  }
+  window.addEventListener('resize', fitProjectTitle);
 
   function hasUnsavedChanges(){
     return !!projectRow && JSON.stringify(data) !== lastSavedJson;
