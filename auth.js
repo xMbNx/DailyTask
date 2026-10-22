@@ -32,6 +32,21 @@
     .auth-box code{font-size:.8rem;}
   `;
 
+  // Traduce los errores de Supabase más habituales.
+  function friendlyError(e){
+    const msg = (e && (e.message || e.error_description)) || String(e || 'Error desconocido');
+    const map = [
+      [/invalid login credentials/i, 'Email o contraseña incorrectos.'],
+      [/email not confirmed/i, 'Este usuario aún no tiene el email confirmado. En Supabase → Authentication → Users, ábrelo y pulsa «Confirm email».'],
+      [/user is banned|banned/i, 'Este usuario está bloqueado en Supabase.'],
+      [/rate limit|too many requests|for security purposes/i, 'Demasiados intentos seguidos. Espera un minuto y vuelve a probar.'],
+      [/failed to fetch|networkerror|load failed/i, 'Sin conexión con el servidor. Comprueba tu conexión a internet.'],
+      [/jwt expired/i, 'La sesión ha caducado. Vuelve a iniciar sesión.']
+    ];
+    for(const [re, out] of map) if(re.test(msg)) return out;
+    return msg;
+  }
+
   function injectCss(){
     if(document.getElementById('authCss')) return;
     const style = document.createElement('style');
@@ -82,9 +97,8 @@
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
         btn.disabled = false;
         if(error){
-          err.textContent = error.message === 'Invalid login credentials'
-            ? 'Email o contraseña incorrectos.'
-            : error.message;
+          console.warn('Login:', error);
+          err.textContent = friendlyError(error);
           return;
         }
         overlay.remove();
@@ -105,5 +119,5 @@
     location.href = 'index.html';
   }
 
-  window.DT = { sb, requireAuth, signOut };
+  window.DT = { sb, requireAuth, signOut, friendlyError };
 })();

@@ -300,15 +300,17 @@
   }
 
   /* ---------- loading ---------- */
+  let currentProjects = [];
   async function loadProjects(){
     const { data, error } = await sb.from('projects').select('id, slug, name, data').order('name');
     if(error){
       console.error(error);
-      renderBanner('No se pudieron cargar los proyectos: ' + error.message);
+      renderBanner('No se pudieron cargar los proyectos: ' + DT.friendlyError(error));
       return;
     }
     renderBanner(null);
     data.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    currentProjects = data;
     renderGrid(data);
   }
 
@@ -334,15 +336,23 @@
   async function createProject(){
     const name = newNameInput.value.trim();
     if(!name){ newNameErr.textContent = 'Escribe un nombre.'; return; }
-    const slug = slugify(name);
-    if(!slug){ newNameErr.textContent = 'Nombre no válido, prueba con otro.'; return; }
+    const base = slugify(name);
+    if(!base){ newNameErr.textContent = 'Nombre no válido, prueba con otro.'; return; }
+    if(currentProjects.some(p => p.name.toLowerCase() === name.toLowerCase())){
+      newNameErr.textContent = 'Ya existe un proyecto con ese nombre.'; return;
+    }
 
-    const { error } = await sb.from('projects').insert({ slug, name });
+    // El slug (la URL) no cambia al renombrar, así que un nombre antiguo puede
+    // seguir ocupándolo: en ese caso se usa trabajo-2, trabajo-3...
+    let error = null;
+    for(let n = 1; n <= 20; n++){
+      const slug = n === 1 ? base : (base.slice(0, 46) + '-' + n);
+      ({ error } = await sb.from('projects').insert({ slug, name }));
+      if(!error || error.code !== '23505') break;
+    }
     if(error){
       console.error(error);
-      newNameErr.textContent = error.code === '23505'
-        ? 'Ya existe un proyecto con ese nombre.'
-        : 'No se pudo crear el proyecto: ' + error.message;
+      newNameErr.textContent = 'No se pudo crear el proyecto: ' + DT.friendlyError(error);
       return;
     }
     closeNewProjectModal();

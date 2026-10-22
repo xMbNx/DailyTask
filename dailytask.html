@@ -763,7 +763,7 @@
       .select('id, name, data, updated_at')
       .eq('slug', PROJECT_KEY)
       .maybeSingle();
-    if(error){ console.error(error); renderBanner('loaderror', error.message); return; }
+    if(error){ console.error(error); renderBanner('loaderror', DT.friendlyError(error)); return; }
     if(!row){ renderBanner('notfound'); return; }
 
     projectRow = { id: row.id, updated_at: row.updated_at };
@@ -773,9 +773,9 @@
     titleEl.appendChild(document.createElement('span')).textContent = row.name;
     titleEl.hidden = false;
     fitProjectTitle();
-    data = normalizeData(row.data) || defaultData();
+    data = applyOpenState(normalizeData(row.data) || defaultData());
     // A brand-new project (data null) gets its default categories saved right away.
-    lastSavedJson = row.data ? JSON.stringify(data) : null;
+    lastSavedJson = row.data ? cloudJson(data) : null;
     render();
   }
 
@@ -813,12 +813,32 @@
   }
   window.addEventListener('resize', fitProjectTitle);
 
+  // Qué tareas están desplegadas es cosa de cada navegador: no se sube a Supabase
+  // (si no, desplegar una tarea contaría como cambio y podría provocar conflictos).
+  const UI_KEY = 'tareas-open-v1:' + PROJECT_KEY;
+  function cloudJson(d){
+    return JSON.stringify(d, (k, v) => (k === '_open' || k === 'completedOpen') ? undefined : v);
+  }
+  function saveOpenState(){
+    const open = [];
+    data.categories.forEach(c => c.tasks.forEach(t => { if(t._open) open.push(t.id); }));
+    try{ localStorage.setItem(UI_KEY, JSON.stringify(open)); }catch(e){ /* almacenamiento bloqueado */ }
+  }
+  function applyOpenState(d){
+    let open = [];
+    try{ open = JSON.parse(localStorage.getItem(UI_KEY) || '[]'); }catch(e){ /* nada */ }
+    const set = new Set(open);
+    d.categories.forEach(c => c.tasks.forEach(t => { t._open = set.has(t.id); }));
+    return d;
+  }
+
   function hasUnsavedChanges(){
-    return !!projectRow && JSON.stringify(data) !== lastSavedJson;
+    return !!projectRow && cloudJson(data) !== lastSavedJson;
   }
 
   function persist(){
-    if(!projectRow || saveConflict) return;
+    if(projectRow) saveOpenState();
+    if(!projectRow || saveConflict || !hasUnsavedChanges()) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(flushSave, SAVE_DELAY_MS);
   }
@@ -828,7 +848,7 @@
     clearTimeout(saveTimer);
     if(!projectRow || (saveConflict && !force)) return true;
     if(saving){ saveTimer = setTimeout(flushSave, SAVE_DELAY_MS); return false; }
-    const json = JSON.stringify(data);
+    const json = cloudJson(data);
     if(json === lastSavedJson) return true;
 
     saving = true;
@@ -837,7 +857,7 @@
     const { data: rows, error } = await query.select('updated_at');
     saving = false;
 
-    if(error){ console.error(error); renderBanner('saveerror', error.message); return false; }
+    if(error){ console.error(error); renderBanner('saveerror', DT.friendlyError(error)); return false; }
     if(!rows.length){ saveConflict = true; renderBanner('conflict'); return false; }
     projectRow.updated_at = rows[0].updated_at;
     lastSavedJson = json;
@@ -896,7 +916,7 @@
       addButton('Reintentar ahora', () => flushSave());
     } else if(kind === 'conflict'){
       note.textContent = 'Este proyecto se ha modificado desde otra pestaña o dispositivo, así que tus últimos cambios no se han guardado. Recarga para ver la versión más reciente (perderás los cambios de aquí) o guarda los tuyos encima.';
-      addButton('Recargar', () => { saveConflict = false; lastSavedJson = JSON.stringify(data); location.reload(); });
+      addButton('Recargar', () => { saveConflict = false; lastSavedJson = cloudJson(data); location.reload(); });
       addButton('Guardar los míos', () => flushSave(true), true);
     }
     el.appendChild(box);
@@ -2036,7 +2056,7 @@
 
   /* ---------- export / import ---------- */
   document.getElementById('exportBtn').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(JSON.parse(cloudJson(data)), null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = PROJECT_DATA_FILENAME;
