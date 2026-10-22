@@ -174,7 +174,7 @@
     const stored = localStorage.getItem(THEME_KEY);
     const effective = stored || getSystemTheme();
     const next = effective === 'dark' ? 'light' : 'dark';
-    localStorage.setItem(THEME_KEY, next);
+    DT.setPref(THEME_KEY, next);
     applyTheme(next);
   });
   applyTheme(localStorage.getItem(THEME_KEY));

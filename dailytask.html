@@ -822,7 +822,7 @@
   function saveOpenState(){
     const open = [];
     data.categories.forEach(c => c.tasks.forEach(t => { if(t._open) open.push(t.id); }));
-    try{ localStorage.setItem(UI_KEY, JSON.stringify(open)); }catch(e){ /* almacenamiento bloqueado */ }
+    DT.setPref(UI_KEY, JSON.stringify(open));
   }
   function applyOpenState(d){
     let open = [];
@@ -2042,7 +2042,7 @@
       cb.addEventListener('change', () => {
         if(cb.checked) hiddenCategories.delete(cat.id);
         else hiddenCategories.add(cat.id);
-        localStorage.setItem(HIDDEN_CATS_KEY, JSON.stringify([...hiddenCategories]));
+        DT.setPref(HIDDEN_CATS_KEY, JSON.stringify([...hiddenCategories]));
         renderGrid();
       });
       const label = document.createElement('label');
@@ -2088,7 +2088,7 @@
   groupSortSelect.value = groupSortMode;
   groupSortSelect.addEventListener('change', () => {
     groupSortMode = groupSortSelect.value;
-    localStorage.setItem(GROUP_SORT_KEY, groupSortMode);
+    DT.setPref(GROUP_SORT_KEY, groupSortMode);
     renderGrid();
   });
 
@@ -2109,7 +2109,7 @@
     const stored = localStorage.getItem(THEME_KEY);
     const effective = stored || getSystemTheme();
     const next = effective === 'dark' ? 'light' : 'dark';
-    localStorage.setItem(THEME_KEY, next);
+    DT.setPref(THEME_KEY, next);
     applyTheme(next);
   });
   applyTheme(localStorage.getItem(THEME_KEY));
@@ -2126,7 +2126,7 @@
     document.querySelector('.wrap').style.zoom = zoomVal + '%';
     zoomRange.value = zoomVal;
     zoomLabel.textContent = zoomVal + '%';
-    localStorage.setItem(ZOOM_KEY, zoomVal);
+    DT.setPref(ZOOM_KEY, zoomVal);
     applyGridCols();
   }
   zoomRange.addEventListener('input', () => { zoomVal = parseInt(zoomRange.value, 10); applyZoom(); });
@@ -2155,7 +2155,7 @@
   colBtns.forEach(b => {
     b.addEventListener('click', () => {
       chosenCols = parseInt(b.dataset.cols, 10);
-      localStorage.setItem(COLS_KEY, chosenCols);
+      DT.setPref(COLS_KEY, chosenCols);
       applyGridCols();
     });
   });

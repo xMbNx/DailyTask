@@ -107,17 +107,96 @@
     });
   }
 
+  /* ---------- preferencias en la nube (tabla user_prefs) ----------
+     Las páginas siguen leyendo localStorage (es instantáneo), pero cada cambio
+     se sube a Supabase con DT.setPref, y al iniciar sesión se bajan las de la
+     nube. Así tema, zoom, columnas, orden, categorías ocultas y tareas
+     desplegadas te siguen en cualquier equipo. */
+  const PREF_PREFIXES = ['tareas-view-', 'tareas-open-v1:'];
+  const isPref = k => PREF_PREFIXES.some(p => k.startsWith(p));
+  let prefsReady = false;            // no subir nada hasta haber bajado lo de la nube
+  let pendingPrefs = {};
+  let prefsTimer = null;
+
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k, v){
+    try{ if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){ /* bloqueado */ }
+  }
+
+  // Guarda una preferencia: en este navegador al momento y en la nube en ~0,6 s.
+  function setPref(key, value){
+    const v = value === null || value === undefined ? null : String(value);
+    if(lsGet(key) === v) return;
+    lsSet(key, v);
+    if(!isPref(key)) return;
+    pendingPrefs[key] = v;
+    clearTimeout(prefsTimer);
+    prefsTimer = setTimeout(flushPrefs, 600);
+  }
+
+  async function flushPrefs(){
+    clearTimeout(prefsTimer);
+    if(!prefsReady || !sb) return;
+    const patch = pendingPrefs;
+    if(!Object.keys(patch).length) return;
+    pendingPrefs = {};
+    const { error } = await sb.rpc('merge_prefs', { p_patch: patch });
+    if(error){
+      console.warn('No se pudieron guardar las preferencias', error);
+      pendingPrefs = Object.assign(patch, pendingPrefs);   // se reintenta con el próximo cambio
+    }
+  }
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') flushPrefs(); });
+
+  // Baja las preferencias de la nube. Si cambian algo de lo que ya se ha pintado,
+  // recarga una vez (antes de cargar el tablero, así no se pierde nada).
+  async function syncPrefs(){
+    const { data: row, error } = await sb.from('user_prefs').select('prefs').maybeSingle();
+    if(error){ console.warn('No se pudieron cargar las preferencias', error); prefsReady = true; return false; }
+    const cloud = (row && row.prefs) || {};
+    let changed = false;
+    Object.keys(cloud).forEach(k => {
+      if(!isPref(k)) return;
+      const v = cloud[k] === null ? null : String(cloud[k]);
+      if(lsGet(k) !== v){ lsSet(k, v); changed = true; }
+    });
+    // Lo que solo existe en este navegador (p. ej. la primera vez) se sube.
+    const localOnly = {};
+    try{
+      for(let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if(isPref(k) && !(k in cloud)) localOnly[k] = localStorage.getItem(k);
+      }
+    }catch(e){ /* bloqueado */ }
+    prefsReady = true;
+    if(Object.keys(localOnly).length){ Object.assign(pendingPrefs, localOnly); flushPrefs(); }
+
+    if(changed){
+      let n = 0;
+      try{ n = +sessionStorage.getItem('dt-prefs-reload') || 0; }catch(e){ /* nada */ }
+      if(n < 1){
+        try{ sessionStorage.setItem('dt-prefs-reload', n + 1); }catch(e){ /* nada */ }
+        location.reload();
+        return true;
+      }
+    }
+    try{ sessionStorage.removeItem('dt-prefs-reload'); }catch(e){ /* nada */ }
+    return false;
+  }
+
   async function requireAuth(){
     if(!configured){ showNotConfigured(); return new Promise(() => {}); }
     const { data } = await sb.auth.getSession();
-    if(data.session) return data.session;
-    return showLogin();
+    const session = data.session || await showLogin();
+    if(await syncPrefs()) return new Promise(() => {});   // recargando con las prefs de la nube
+    return session;
   }
 
   async function signOut(){
+    await flushPrefs();
     if(sb) await sb.auth.signOut();
     location.href = 'index.html';
   }
 
-  window.DT = { sb, requireAuth, signOut, friendlyError };
+  window.DT = { sb, requireAuth, signOut, friendlyError, setPref, flushPrefs };
 })();
