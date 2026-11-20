@@ -1,8 +1,8 @@
 /* Estilos visuales de Daily Task (se eligen con el selector "Estilo").
    Sin atributo data-skin = Clásico (las reglas de cada página). Cada estilo se activa con
    <html data-skin="..."> y redefine las variables de color y la forma de los elementos.
-   Cristal, Neumorfismo, Arcilla y Neobrutalismo respetan el modo claro/oscuro;
-   8 bits, Terminal y Cristal son siempre oscuros. */
+   Neumorfismo, Arcilla, 8 bits y Neobrutalismo respetan el modo claro/oscuro;
+   Cristal y Terminal son siempre oscuros. */
 
 .skin-select{
   font:inherit; font-size:.8rem; padding:7px 10px; border-radius:8px; max-width:100%;
@@ -26,9 +26,9 @@
 }
 :root[data-skin="glass"] body{
   background:
-    radial-gradient(60vmax 50vmax at 8% 0%, #6f4dff 0%, transparent 60%),
-    radial-gradient(55vmax 45vmax at 95% 25%, #00bcd4 0%, transparent 58%),
-    radial-gradient(60vmax 50vmax at 40% 105%, #e0409a 0%, transparent 60%),
+    radial-gradient(55vmax 45vmax at 8% 0%, rgba(111,77,255,.34) 0%, transparent 60%),
+    radial-gradient(50vmax 40vmax at 95% 25%, rgba(0,188,212,.24) 0%, transparent 58%),
+    radial-gradient(55vmax 45vmax at 40% 105%, rgba(224,64,154,.24) 0%, transparent 60%),
     #14123a;
   background-attachment:fixed;
 }
@@ -197,15 +197,26 @@
 :root[data-skin="clay"] .modal-box{border-radius:30px;}
 
 /* ======================================================================
-   4. 8 BITS — píxeles, bordes escalonados y barras por bloques (siempre oscuro)
+   4. 8 BITS — píxeles, bordes escalonados y barras por bloques
    ====================================================================== */
 :root[data-skin="pixel"]{
+  --bg:#f1e8d0; --card:#fffaf0; --text:#1a1c2c; --muted:#5a5670; --border:#8c8266;
+  --accent:#e0643a; --accent-soft:#ffd9a8; --track:#e2d6b8; --done:#7a7a8c; --danger:#b13e53; --radius:0px;
+  --px:#1a1c2c; --chk:var(--chk-dark);
+}
+@media (prefers-color-scheme: dark){
+  :root[data-skin="pixel"]:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#1a1c2c; --card:#262b4a; --text:#f4f4f4; --muted:#a9c1d3; --border:#566c86;
+    --accent:#ef7d57; --accent-soft:#3b4a7a; --track:#12131f; --done:#94b0c2; --danger:#d4506a; --px:#f4f4f4;
+  }
+}
+:root[data-skin="pixel"][data-theme="dark"]{
   color-scheme:dark;
   --bg:#1a1c2c; --card:#262b4a; --text:#f4f4f4; --muted:#a9c1d3; --border:#566c86;
-  --accent:#ef7d57; --accent-soft:#3b4a7a; --track:#12131f; --done:#94b0c2; --danger:#d4506a; --radius:0px;
-  --px:#f4f4f4; --chk:var(--chk-dark);
+  --accent:#ef7d57; --accent-soft:#3b4a7a; --track:#12131f; --done:#94b0c2; --danger:#d4506a; --px:#f4f4f4;
 }
-:root[data-skin="pixel"] body{font-family:'VT323','Courier New',monospace; font-size:18px; line-height:1.2; background:#1a1c2c;}
+:root[data-skin="pixel"] body{font-family:'VT323','Courier New',monospace; font-size:18px; line-height:1.2;}
 :root[data-skin="pixel"] *{border-radius:0!important; text-shadow:none;}
 :root[data-skin="pixel"] :is(h1,h2,.project-title,.category-name,.overview-value,.modal-title,.fab-label,.eyebrow,.guide summary,.mini-value,.card .name,button,.vt-btn,.col-btn,.sort-btn,.group-sort-select){
   font-family:'Press Start 2P','Courier New',monospace; letter-spacing:0;
@@ -244,6 +255,7 @@
 :root[data-skin="pixel"] :is(input[type=text],input[type=search],.modal-select,.group-sort-select,.skin-select){border:3px solid var(--border); background:var(--bg); color:var(--text);}
 :root[data-skin="pixel"] :is(.vt-btn,.col-btn,.sub-add-btn,a.vt-btn){border:3px solid #0b0b14; background:var(--card); color:var(--text);}
 :root[data-skin="pixel"] .col-btn.active{background:var(--accent); color:#1a1c2c;}
+:root[data-skin="pixel"] :is(.fab-label,.fab-icon){color:var(--text);}
 :root[data-skin="pixel"] button,:root[data-skin="pixel"] a.vt-btn{
   box-shadow:inset -3px -3px 0 rgba(0,0,0,.4), inset 3px 3px 0 rgba(255,255,255,.28);
 }
@@ -272,8 +284,7 @@
 :root[data-skin="pixel"] .ov-line-fill{border-radius:0;}
 :root[data-skin="pixel"] mark.search-highlight{background:#ffcd75; color:#1a1c2c;}
 :root[data-skin="pixel"] .modal-overlay,:root[data-skin="pixel"] .modal-backdrop{background:rgba(10,10,20,.75);}
-:root[data-skin="pixel"] #themeToggleBtn{display:none;}
-:root[data-skin="pixel"] .progress-ring-bg{stroke:#12131f;}
+:root[data-skin="pixel"] .progress-ring-bg{stroke:var(--track);}
 :root[data-skin="pixel"] .overview-banner-img,:root[data-skin="pixel"] .logo{image-rendering:pixelated;}
 
 /* ======================================================================
@@ -308,7 +319,7 @@
 :root[data-skin="brutal"] .new-card{border:3px dashed var(--border)!important; border-radius:var(--radius); background:transparent!important; color:var(--text)!important; box-shadow:none!important;}
 :root[data-skin="brutal"] .task{border:2.5px solid var(--border); border-radius:8px; box-shadow:3px 3px 0 var(--br-sh); background:var(--card);}
 :root[data-skin="brutal"] .task:hover{border-color:var(--border); transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--br-sh);}
-:root[data-skin="brutal"] .subtasks{border-top:2.5px solid var(--border); background:var(--accent-soft);}
+:root[data-skin="brutal"] .subtasks{border-top:2.5px solid var(--border); background:color-mix(in srgb, var(--category-color, var(--accent)) 24%, var(--card));}
 :root[data-skin="brutal"] :is(.category-name,.overview-value,.task-title,.card .name,h1,h2){font-weight:800;}
 :root[data-skin="brutal"] :is(.priority-visual,.badge,.cat-count,.cat-vis-item,.eye-btn,.sort-toggle-btns,.mini-icon,.overview-icon){
   border:2px solid var(--border); box-shadow:none; background:var(--card);
