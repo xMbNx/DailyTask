@@ -395,6 +395,9 @@
   .category-name{font-size:17px; min-width:0; overflow-wrap:anywhere;}
   .category-head{margin-bottom:14px;}
   .category-head-main{min-width:0;}
+  .category-head-actions{flex:0 1 auto; min-width:0; max-width:100%;}
+  .cat-mini-bar{flex-shrink:1; min-width:60px; max-width:100%;}
+  .cat-count{white-space:nowrap;}
   .sort-toggle{margin-bottom:14px;}
   .sort-toggle-btns{border:0; padding:3px; border-radius:8px;}
   .sort-btn{border-radius:6px; padding:6px;}
@@ -422,6 +425,8 @@
   @media(max-width:440px){.overview{grid-template-columns:repeat(2,1fr); width:auto;} h1{font-size:25px;} .workspace-heading{flex-wrap:wrap;} .overview-value{font-size:23px;} .overview-label{font-size:10px;} .swatches{gap:7px;} .add-cat-row{gap:14px;} .vt-group{flex-wrap:wrap;}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
+<link rel="stylesheet" href="skins.css">
+<script src="skins.js"></script>
 </head>
 <body>
 
@@ -545,6 +550,7 @@
         <li>En la fila de controles: la fecha de hoy, el botón "<b>← Volver a proyectos</b>" (lleva a la página de inicio), el botón "<b>Guía rápida</b>" (siempre con el borde resaltado, salta a esta guía) y el modo <b>claro/oscuro</b> (borde resaltado también) — este último alterna el tema y recuerda tu elección.</li>
         <li><b>Tamaño de vista</b>: escala toda la página (80%–150%).</li>
         <li><b>Columnas</b>: elige 2, 3 o 4 columnas; se reduce solo si la ventana es muy estrecha. Las categorías conservan el orden elegido y cada una se coloca en la columna que tenga más hueco en ese momento (la más baja), así quedan lo más juntas posible y no se dejan huecos grandes aunque una columna sea mucho más alta que otra.</li>
+        <li><b>Estilo</b> (selector junto al botón de modo claro/oscuro): cambia el diseño de tarjetas, botones, casillas y barras. Hay siete: <b>Clásico</b>, <b>Cristal</b> (vidrio esmerilado), <b>Neumorfismo</b> (relieve suave), <b>Arcilla 3D</b>, <b>8 bits</b> (píxeles), <b>Neobrutalismo</b> (bordes y sombras duras) y <b>Terminal neón</b>. Cristal, 8 bits y Terminal son siempre oscuros, así que con ellos el botón de modo claro/oscuro se oculta. El estilo elegido se recuerda en tu cuenta.</li>
         <li>Todas estas preferencias de vista se recuerdan en este navegador.</li>
       </ul>
     </details>

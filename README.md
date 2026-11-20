@@ -6,6 +6,7 @@ Gestor de tareas por categorías. Frontend estático (HTML + CSS + JS, sin build
 
 - **[index.html](index.html)** — página de inicio: listado de tus proyectos con su resumen (pendientes, completadas, progreso). Desde aquí se crean, renombran y eliminan proyectos.
 - **[dailytask.html](dailytask.html)** — la aplicación de tareas: categorías con color, tareas con prioridad y subtareas, progreso por categoría y global, búsqueda, modo claro/oscuro y varias columnas de vista. Se abre como `dailytask.html?p=<proyecto>`.
+- **[skins.css](skins.css)** y **[skins.js](skins.js)** — los siete estilos visuales (Clásico, Cristal, Neumorfismo, Arcilla 3D, 8 bits, Neobrutalismo y Terminal neón) y su selector «Estilo». El elegido se guarda con el resto de preferencias de vista. La fuente del estilo 8 bits (Google Fonts) solo se descarga si se elige ese estilo.
 - **[auth.js](auth.js)** — cliente de Supabase y pantalla de inicio de sesión, compartidos por las dos páginas.
 - **[config.js](config.js)** — URL y clave pública (anon) de tu proyecto de Supabase.
 - **[supabase/schema.sql](supabase/schema.sql)** — tabla `projects` y políticas de seguridad (RLS).
