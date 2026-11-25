@@ -293,9 +293,9 @@
   .heading-action{display:flex; align-items:center; gap:8px; white-space:nowrap;}
   .overview{display:grid; grid-template-columns:auto repeat(5,1fr) auto; width:max-content; max-width:100%; gap:12px; margin:28px auto 22px;}
   .overview-item.overview-banner-item{padding:0; overflow:hidden;}
-  .project-title{display:flex; align-items:center; justify-content:center; margin:0; padding:12px 22px; width:254px; text-align:center; font-size:30px; line-height:1.2; letter-spacing:-.4px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:inset 0 -5px 0 var(--accent);}
+  .project-title{display:flex; align-items:center; justify-content:center; margin:0; padding:10px 14px; width:170px; text-align:center; font-size:24px; line-height:1.2; letter-spacing:-.4px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:inset 0 -5px 0 var(--accent);}
   .project-title[hidden]{display:none;}
-  .overview-banner-img{height:84px; width:auto; max-width:100%; object-fit:contain; border-radius:var(--radius); display:block;}
+  .overview-banner-img{height:110px; width:auto; max-width:100%; object-fit:contain; border-radius:var(--radius); display:block;}
   .overview-item{position:relative; overflow:hidden; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px 16px; display:flex; align-items:center; justify-content:center; gap:16px;}
   .overview-item:not(.overview-banner-item){display:grid; grid-template-columns:auto auto auto; align-items:center; justify-content:center; align-content:center; gap:3px 0; text-align:center;}
   .overview-item:not(.overview-banner-item) .overview-icon{grid-row:1; grid-column:1;}
@@ -421,7 +421,7 @@
   .desktop-status[data-failed=true]::before{background:var(--danger);}
   .modal-overlay{backdrop-filter:blur(5px);}
   .modal-box{padding:26px; border-radius:18px;}
-  @media(max-width:760px){body{padding:0 16px 30px;} .fab{right:16px; bottom:16px;} .fab-panel{right:16px; bottom:88px;} .overview{gap:8px; grid-template-columns:repeat(3,1fr); width:auto;} .overview-banner-item, .project-title{grid-column:1 / -1;} .project-title{width:auto;} .overview-banner-img{width:100%; height:auto; max-height:84px;} .overview-item{padding:10px 12px 14px;} .workspace-heading{align-items:flex-start;} .view-toolbar{gap:12px;} .vt-group-right{margin-left:0;} .group-sort .vt-label{display:none;}}
+  @media(max-width:760px){body{padding:0 16px 30px;} .fab{right:16px; bottom:16px;} .fab-panel{right:16px; bottom:88px;} .overview{gap:8px; grid-template-columns:repeat(3,1fr); width:auto;} .overview-banner-item{grid-column:1 / -1;} .project-title{width:auto; min-width:0; padding:8px 10px;} .overview-banner-img{width:100%; height:auto;} .overview-item{padding:10px 12px 14px;} .workspace-heading{align-items:flex-start;} .view-toolbar{gap:12px;} .vt-group-right{margin-left:0;} .group-sort .vt-label{display:none;}}
   @media(max-width:440px){.overview{grid-template-columns:repeat(2,1fr); width:auto;} h1{font-size:25px;} .workspace-heading{flex-wrap:wrap;} .overview-value{font-size:23px;} .overview-label{font-size:10px;} .swatches{gap:7px;} .add-cat-row{gap:14px;} .vt-group{flex-wrap:wrap;}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
@@ -788,17 +788,21 @@
   // Largest font size at which the project name fits its card: one line if it
   // can stay reasonably big, otherwise up to two lines; very long words only
   // get broken as a last resort at the minimum size.
-  const TITLE_MAX_PX = 30, TITLE_MIN_PX = 14, TITLE_ONE_LINE_MIN_PX = 22;
+  const TITLE_MAX_PX = 26, TITLE_MIN_PX = 12, TITLE_ONE_LINE_MIN_PX = 17;
   function fitProjectTitle(){
     const el = document.getElementById('projectTitle');
     if(el.hidden) return;
     const text = el.firstChild;
-    // Next to the other overview cards it must not make the row taller than the
-    // logo card; on its own row (narrow screens) only the line count limits it.
-    const banner = document.querySelector('.overview-banner-item');
-    const maxHeight = Math.abs(banner.offsetTop - el.offsetTop) < 2
-      ? banner.querySelector('img').offsetHeight + 2   // logo height + card border
-      : Infinity;
+    // It must not make its row taller than the other cards in it (the banner on wide
+    // screens, the last stat cards on narrow ones); measured with the title hidden so
+    // the grid row isn't stretched by the title itself.
+    el.style.fontSize = TITLE_MIN_PX + 'px';
+    const top = el.offsetTop;
+    const peers = [...document.querySelectorAll('.overview > .overview-item')]
+      .filter(x => Math.abs(x.offsetTop - top) < 2);
+    el.style.display = 'none';
+    const maxHeight = peers.length ? Math.max(...peers.map(x => x.offsetHeight)) : Infinity;
+    el.style.display = '';
     const padY = parseFloat(getComputedStyle(el).paddingTop) * 2 + 2;
     function fits(size, maxLines){
       el.style.fontSize = size + 'px';
@@ -818,6 +822,8 @@
     el.style.overflowWrap = 'anywhere';
   }
   window.addEventListener('resize', fitProjectTitle);
+  // The banner image changes with the skin/theme: refit once it has its final size.
+  document.querySelector('.overview-banner-img').addEventListener('load', fitProjectTitle);
 
   // Qué tareas están desplegadas es cosa de cada navegador: no se sube a Supabase
   // (si no, desplegar una tarea contaría como cambio y podría provocar conflictos).
