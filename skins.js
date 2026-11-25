@@ -2,7 +2,12 @@
 // el estilo guardado se aplica al instante, antes de pintar, para que no haya parpadeo.
 (function(){
   'use strict';
-  const KEY = 'tareas-view-skin';          // 'tareas-view-' → se sincroniza con la cuenta (auth.js)
+  // 'tareas-view-' → se sincroniza con la cuenta (auth.js).
+  // Cada proyecto guarda su propio estilo en 'tareas-view-skin:<proyecto>'. El estilo general
+  // ('tareas-view-skin') es el de la lista de proyectos y el de los proyectos que aún no tienen uno propio.
+  const GLOBAL_KEY = 'tareas-view-skin';
+  const PROJECT = new URLSearchParams(location.search).get('p') || '';
+  const KEY = PROJECT ? GLOBAL_KEY + ':' + PROJECT : GLOBAL_KEY;
   const SKINS = [
     ['', 'Clásico'],
     ['glass', 'Cristal'],
@@ -15,7 +20,10 @@
   const FONT_URL = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap';
 
   function stored(){
-    try{ return localStorage.getItem(KEY) || ''; }catch(e){ return ''; }
+    try{
+      const own = localStorage.getItem(KEY);          // '' también es una elección (Clásico)
+      return own !== null ? own : (localStorage.getItem(GLOBAL_KEY) || '');
+    }catch(e){ return ''; }
   }
   function valid(s){ return SKINS.some(x => x[0] === s); }
 
@@ -38,7 +46,9 @@
     const select = document.createElement('select');
     select.id = 'skinSelect';
     select.className = 'skin-select';
-    select.setAttribute('aria-label', 'Estilo visual');
+    select.setAttribute('aria-label', PROJECT ? 'Estilo visual de este proyecto' : 'Estilo visual por defecto');
+    select.title = PROJECT ? 'Estilo de este proyecto (cada proyecto puede tener el suyo)'
+                           : 'Estilo de esta lista y de los proyectos que no tengan uno propio';
     SKINS.forEach(([value, label]) => {
       const opt = document.createElement('option');
       opt.value = value; opt.textContent = 'Estilo: ' + label;
@@ -54,4 +64,35 @@
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+
+  // Banner «Daily Task» acorde al estilo y al modo claro/oscuro: banners/<estilo>-<modo>.webp.
+  // Cristal y Terminal neón solo tienen versión oscura, igual que sus estilos.
+  const BANNERS = {'':'clasico', glass:'cristal', neu:'neumorfismo', clay:'arcilla', pixel:'8bits', brutal:'neobrutalismo', term:'terminal'};
+  const ONLY_DARK = ['glass', 'term'];
+  const darkMQ = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  function bannerSrc(){
+    const root = document.documentElement;
+    const skin = root.getAttribute('data-skin') || '';
+    const theme = root.getAttribute('data-theme') || (darkMQ && darkMQ.matches ? 'dark' : 'light');
+    const mode = (ONLY_DARK.includes(skin) || theme === 'dark') ? 'oscuro' : 'claro';
+    return 'banners/' + (BANNERS[skin] || 'clasico') + '-' + mode + '.webp';
+  }
+  function updateBanners(){
+    const src = bannerSrc();
+    document.querySelectorAll('img.overview-banner-img, img.logo').forEach(img => {
+      if(img.getAttribute('src') !== src) img.setAttribute('src', src);
+      img.style.imageRendering = 'auto';   // los banners ya vienen a alta resolución (también el de 8 bits)
+    });
+  }
+  function initBanners(){
+    updateBanners();
+    new MutationObserver(updateBanners).observe(document.documentElement, {attributes:true, attributeFilter:['data-skin', 'data-theme']});
+    if(darkMQ){
+      if(darkMQ.addEventListener) darkMQ.addEventListener('change', updateBanners);
+      else if(darkMQ.addListener) darkMQ.addListener(updateBanners);
+    }
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBanners);
+  else initBanners();
 })();

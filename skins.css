@@ -60,7 +60,7 @@
   -webkit-appearance:none; appearance:none; border-radius:50%; border:1.5px solid rgba(255,255,255,.7); background:rgba(255,255,255,.08); cursor:pointer;
 }
 :root[data-skin="glass"] :is(.task-head input[type=checkbox],.sub-item input[type=checkbox],.cat-vis-item input[type=checkbox]):checked{
-  background:#fff var(--chk-dark) center/75% no-repeat; box-shadow:0 0 8px rgba(255,255,255,.7);
+  background:#e6e3ff var(--chk-dark) center/75% no-repeat; box-shadow:0 0 8px rgba(255,255,255,.55);
 }
 :root[data-skin="glass"] option{background:#1d1a4d; color:#fff;}
 :root[data-skin="glass"] ::placeholder{color:#d6d3f7; opacity:.8;}
@@ -75,7 +75,7 @@
 :root[data-skin="neu"]{
   --bg:#e0e5ec; --card:#e0e5ec; --text:#33404c; --muted:#566373; --border:transparent;
   --accent:#4f62d8; --accent-soft:#d3d9f5; --track:#e0e5ec; --done:#6b7787; --radius:20px;
-  --nu-hi:#ffffff; --nu-lo:#a3b1c6; --chk:var(--chk-light);
+  --nu-hi:#f2f5f9; --nu-lo:#a3b1c6; --chk:var(--chk-light);
   --nu-raise:7px 7px 14px var(--nu-lo), -7px -7px 14px var(--nu-hi);
   --nu-raise-s:4px 4px 8px var(--nu-lo), -4px -4px 8px var(--nu-hi);
   --nu-in:inset 3px 3px 6px var(--nu-lo), inset -3px -3px 6px var(--nu-hi);
@@ -251,6 +251,7 @@
 :root[data-skin="pixel"] .task:hover{border-color:var(--category-color,var(--px));}
 :root[data-skin="pixel"] .subtasks{background:var(--card); border-top:3px solid var(--border);}
 :root[data-skin="pixel"] :is(.priority-visual,.badge,.cat-count,.cat-vis-item,.eye-btn,.sort-toggle-btns,.mini-icon,.overview-icon,.mini-item){border:2px solid var(--border); background:var(--bg);}
+:root[data-skin="pixel"] .eye-btn{padding:0; line-height:0;}   /* sin el relleno de los botones pixel, el ojo queda centrado */
 :root[data-skin="pixel"] .overview-icon,:root[data-skin="pixel"] .mini-icon{background:var(--accent-soft);}
 :root[data-skin="pixel"] :is(input[type=text],input[type=search],.modal-select,.group-sort-select,.skin-select){border:3px solid var(--border); background:var(--bg); color:var(--text);}
 :root[data-skin="pixel"] :is(.vt-btn,.col-btn,.sub-add-btn,a.vt-btn){border:3px solid #0b0b14; background:var(--card); color:var(--text);}
@@ -291,8 +292,8 @@
    5. NEOBRUTALISMO — bordes gruesos, sombras duras y color plano
    ====================================================================== */
 :root[data-skin="brutal"]{
-  --bg:#fff0b8; --card:#ffffff; --text:#111111; --muted:#3f3f46; --border:#111111;
-  --accent:#4f8ef7; --accent-soft:#d9ccff; --track:#ffffff; --done:#6b6b73; --danger:#e5234a; --radius:10px;
+  --bg:#fff0b8; --card:#fcf7e6; --text:#111111; --muted:#3f3f46; --border:#111111;
+  --accent:#4f8ef7; --accent-soft:#d9ccff; --track:#fcf7e6; --done:#6b6b73; --danger:#e5234a; --radius:10px;
   --br-sh:#111111; --chk:var(--chk-dark);
 }
 @media (prefers-color-scheme: dark){
@@ -314,7 +315,10 @@
 }
 :root[data-skin="brutal"] :is(.fab-label,.fab-icon,.mini-item){box-shadow:3px 3px 0 var(--br-sh);}
 :root[data-skin="brutal"] .project-title{border-bottom:8px solid var(--accent); font-weight:800;}
-:root[data-skin="brutal"] .cat-column{border-top:12px solid var(--category-color);}
+:root[data-skin="brutal"] .cat-column{
+  padding-top:13px;
+  background-image:linear-gradient(to bottom, var(--category-color) 0 10px, var(--border) 10px 13px, transparent 13px);
+}
 :root[data-skin="brutal"] .view-toolbar{border-bottom:3px solid var(--border);}
 :root[data-skin="brutal"] .new-card{border:3px dashed var(--border)!important; border-radius:var(--radius); background:transparent!important; color:var(--text)!important; box-shadow:none!important;}
 :root[data-skin="brutal"] .task{border:2.5px solid var(--border); border-radius:8px; box-shadow:3px 3px 0 var(--br-sh); background:var(--card);}
