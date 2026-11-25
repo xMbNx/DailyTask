@@ -2105,7 +2105,7 @@
   });
 
   /* ---------- theme (light/dark) ---------- */
-  const THEME_KEY = 'tareas-view-theme';
+  const THEME_KEY = DTView.themeKey;   // propio de esta página / proyecto (skins.js)
   const themeToggleBtn = document.getElementById('themeToggleBtn');
 
   function getSystemTheme(){
@@ -2118,13 +2118,13 @@
     themeToggleBtn.textContent = effective === 'dark' ? '☀ Modo claro' : '◐ Modo oscuro';
   }
   themeToggleBtn.addEventListener('click', () => {
-    const stored = localStorage.getItem(THEME_KEY);
+    const stored = DTView.storedTheme();
     const effective = stored || getSystemTheme();
     const next = effective === 'dark' ? 'light' : 'dark';
     DT.setPref(THEME_KEY, next);
     applyTheme(next);
   });
-  applyTheme(localStorage.getItem(THEME_KEY));
+  applyTheme(DTView.storedTheme());
 
   /* ---------- view size (zoom) ---------- */
   const ZOOM_KEY = 'tareas-view-zoom';

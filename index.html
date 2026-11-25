@@ -165,8 +165,8 @@
     '#0284c7','#16a34a','#65a30d','#ca8a04','#f59e0b','#ea580c','#92400e','#57534e'
   ];
 
-  /* ---------- theme (shared with the projects) ---------- */
-  const THEME_KEY = 'tareas-view-theme';
+  /* ---------- theme (light/dark), independent from the projects ---------- */
+  const THEME_KEY = DTView.themeKey;   // propio de esta página / proyecto (skins.js)
   const themeToggleBtn = document.getElementById('themeToggleBtn');
   function getSystemTheme(){
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -178,13 +178,13 @@
     themeToggleBtn.textContent = effective === 'dark' ? '☀ Modo claro' : '◐ Modo oscuro';
   }
   themeToggleBtn.addEventListener('click', () => {
-    const stored = localStorage.getItem(THEME_KEY);
+    const stored = DTView.storedTheme();
     const effective = stored || getSystemTheme();
     const next = effective === 'dark' ? 'light' : 'dark';
     DT.setPref(THEME_KEY, next);
     applyTheme(next);
   });
-  applyTheme(localStorage.getItem(THEME_KEY));
+  applyTheme(DTView.storedTheme());
 
   document.getElementById('signOutBtn').addEventListener('click', () => DT.signOut());
 
@@ -393,7 +393,8 @@
       alert('No se pudo eliminar el proyecto.');
       return;
     }
-    DT.setPref('tareas-view-skin:' + p.slug, null);   // su estilo propio ya no hace falta
+    DT.setPref('tareas-view-skin:' + p.slug, null);    // su estilo y su modo propios
+    DT.setPref('tareas-view-theme:' + p.slug, null);   // ya no hacen falta
     await loadProjects();
   }
 

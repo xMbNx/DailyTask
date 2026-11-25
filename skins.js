@@ -3,11 +3,26 @@
 (function(){
   'use strict';
   // 'tareas-view-' → se sincroniza con la cuenta (auth.js).
-  // Cada proyecto guarda su propio estilo en 'tareas-view-skin:<proyecto>'. El estilo general
-  // ('tareas-view-skin') es el de la lista de proyectos y el de los proyectos que aún no tienen uno propio.
+  // La portada (lista de proyectos) y cada proyecto tienen su propio estilo y su propio modo
+  // claro/oscuro: 'tareas-view-skin:<ámbito>' y 'tareas-view-theme:<ámbito>', donde el ámbito es
+  // el proyecto o '@inicio' para la portada. Las claves antiguas sin ámbito ('tareas-view-skin',
+  // 'tareas-view-theme'), que ya no se escriben, quedan solo como valor de partida.
   const GLOBAL_KEY = 'tareas-view-skin';
+  const THEME_GLOBAL_KEY = 'tareas-view-theme';
   const PROJECT = new URLSearchParams(location.search).get('p') || '';
-  const KEY = PROJECT ? GLOBAL_KEY + ':' + PROJECT : GLOBAL_KEY;
+  const SCOPE = PROJECT || '@inicio';
+  const KEY = GLOBAL_KEY + ':' + SCOPE;
+  const THEME_KEY = THEME_GLOBAL_KEY + ':' + SCOPE;
+
+  function storedTheme(){
+    try{
+      const v = localStorage.getItem(THEME_KEY) || localStorage.getItem(THEME_GLOBAL_KEY) || '';
+      return v === 'light' || v === 'dark' ? v : '';
+    }catch(e){ return ''; }
+  }
+  // El modo se aplica ya, antes de pintar; cada página pone luego su botón.
+  if(storedTheme()) document.documentElement.setAttribute('data-theme', storedTheme());
+  window.DTView = { themeKey: THEME_KEY, storedTheme };
   const SKINS = [
     ['', 'Clásico'],
     ['glass', 'Cristal'],
@@ -46,9 +61,9 @@
     const select = document.createElement('select');
     select.id = 'skinSelect';
     select.className = 'skin-select';
-    select.setAttribute('aria-label', PROJECT ? 'Estilo visual de este proyecto' : 'Estilo visual por defecto');
-    select.title = PROJECT ? 'Estilo de este proyecto (cada proyecto puede tener el suyo)'
-                           : 'Estilo de esta lista y de los proyectos que no tengan uno propio';
+    select.setAttribute('aria-label', PROJECT ? 'Estilo visual de este proyecto' : 'Estilo visual de la lista de proyectos');
+    select.title = PROJECT ? 'Estilo de este proyecto (cada proyecto tiene el suyo)'
+                           : 'Estilo de la lista de proyectos (cada proyecto tiene el suyo)';
     SKINS.forEach(([value, label]) => {
       const opt = document.createElement('option');
       opt.value = value; opt.textContent = 'Estilo: ' + label;
